@@ -26,6 +26,6 @@ build = {
    build_command = "ls",
    install_command = "bash install.sh",
    install = {
-      lua = {["init"] = "init.lua"}
+      lua = {["litegfx.init"] = "init.lua"}
    }
 }
