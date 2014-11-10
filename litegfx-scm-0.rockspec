@@ -3,7 +3,7 @@ version = "scm-0"
 
 source = {
    url = "git://github.com/szym/litegfx.js",
-   src = "litegfx.js",
+   dir = "litegfx.js",
 }
 
 description = {
