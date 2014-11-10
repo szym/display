@@ -23,3 +23,8 @@ directory to have it rendered by the browser.
 ## Installation and usage
 
 See [gfx.js](https://github.com/clementfarabet/gfx.js/) for usage with torch.
+
+    gfx = require 'litegfx.js'
+    gfx.image(image.lena())
+    gfx.chart(torch.randn(10, 2))
+

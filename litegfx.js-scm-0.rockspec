@@ -19,7 +19,8 @@ dependencies = {
    "torch >= 7.0",
    "image >= 1.0",
    "penlight >= 1.1.0",
-   "graphicsmagick >= 1.scm"
+   "graphicsmagick >= 1.scm",
+   "lua-cjson >= 2.1.0"
 }
 
 build = {
