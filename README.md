@@ -22,6 +22,14 @@ directory to have it rendered by the browser.
 
 ## Installation and usage
 
+Install via:
+
+    luarocks install https://raw.githubusercontent.com/szym/litegfx.js/master/litegfx.js-scm-0.rockspec
+
+Launch the server:
+
+    ~/.litegfx.js/run.js
+
 See [gfx.js](https://github.com/clementfarabet/gfx.js/) for usage with torch.
 
     gfx = require 'litegfx.js'

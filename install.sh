@@ -13,3 +13,4 @@ echo '==> Installing package'
 cd ${DEST}
 npm install
 
+echo "Start litegfx.js by running ${DEST}/run.js"
