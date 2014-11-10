@@ -3,13 +3,12 @@ version = "scm-0"
 
 source = {
    url = "git://github.com/szym/litegfx.js",
+   dir = "src",
 }
 
 description = {
    summary = "A browser-based graphics server with a Torch7 client.",
-   detailed = [[
-A browser-based graphics server with a Torch7 client.
-   ]],
+   detailed = [[A simple node.js server pushes images and charts to the browser.]],
    homepage = "https://github.com/szym/litegfx.js",
    license = "MIT"
 }
@@ -27,6 +26,6 @@ build = {
    build_command = "ls",
    install_command = "cd litegfx.js; bash install.sh",
    install = {
-      lua = {["init"] = "init.lua"}
+      lua = {["init"] = "src/init.lua"}
    }
 }
