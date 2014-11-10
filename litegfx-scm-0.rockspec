@@ -25,7 +25,7 @@ dependencies = {
 build = {
    type = "command",
    build_command = "ls",
-   install_command = "bash install.sh",
+   install_command = "cd litegfx.js; bash install.sh",
    install = {
       lua = {["init"] = "init.lua"}
    }
