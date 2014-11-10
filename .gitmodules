@@ -1,6 +1,0 @@
-[submodule "static/nvd3"]
-	path = static/nvd3
-	url = git@github.com:novus/nvd3.git
-[submodule "static/saveSvgAsPng"]
-	path = static/saveSvgAsPng
-	url = https://github.com/exupero/saveSvgAsPng
