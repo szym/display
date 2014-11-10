@@ -1,9 +1,9 @@
 {
     "name": "litegfx.js",
-    "description": "A graphics server for your browser",
+    "description": "A browser-based graphics server",
     "author": "litegfx.js: Szymon Jakubczak",
     "version": "0.1.1",
-    "main": "./index.js",
+    "main": "./lib.js",
     "preferGlobal": false,
     "repository": "git://github.com/szym/litegfx.js.git",
     "keywords": ["graphics", "browser"],

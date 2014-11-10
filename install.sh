@@ -2,11 +2,12 @@
 
 set -e
 
-DEST=~/.gfx.js
+DEST=~/.litegfx.js
 
-echo '==> Overwriting existing gfx.js installation'
-cp package.json server.js lib.js  ${DEST}
-cp static/wm.js static/index.html ${DEST}/static
+mkdir -p ${DEST}
+cp README.md package.json run.js lib.js ${DEST}
+cp -r static templates  ${DEST}/
+mkdir -p ${DEST}/static/data
 
 echo '==> Installing package'
 cd ${DEST}

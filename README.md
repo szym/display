@@ -2,8 +2,10 @@
 
 Forked from [gfx.js](https://github.com/clementfarabet/gfx.js/).
 
-The goal is to remain compatible with the torch/python bindings of gfx.js, but
+The goal is to remain compatible with the torch/python API of gfx.js, but
 remove the term.js/tty.js/pty.js stuff which is served just fine by ssh.
+
+I also wanted charts to resize properly when their windows are resized.
 
 A secondary goal is to simplify session management and store window positions
 so that after reloading the window everything remains where it was left.
@@ -20,16 +22,4 @@ directory to have it rendered by the browser.
 
 ## Installation and usage
 
-Install gfx.js.
-
-Then run `install.sh`.
-
-For safety, this overwrites `~/.gfx.js/server.js` (which allows insecure access
-to pty). Start and use gfx.js as before.
-
-## TODO:
-
-- persist window locations in `localStorage`
-- move styling from templates to css
-- fix z-order of grip
-
+See [gfx.js](https://github.com/clementfarabet/gfx.js/) for usage with torch.

@@ -1,4 +1,8 @@
+'use strict';
 
+// Window management for litegfx.js
+// Copyright 2014, Szymon Jakubczak
+//
 (function() {
 
 ////////////
@@ -42,6 +46,12 @@ function splice(obj, el) {
   if (~i) obj.splice(i, 1);
 }
 
+function dispatchResize(divid) {
+  var ev = document.createEvent('Event');
+  ev.initEvent('resizepane', true, true);
+  // TODO: refactor the pane_ + divid logic
+  document.getElementById('pane_' + divid).dispatchEvent(ev);
+}
 
 /////////
 // wm
@@ -51,16 +61,12 @@ var wm = {};
 wm.windows;
 
 wm.open = function() {
-  var socket;
+  var base = '';
   if (document.location.pathname) {
-    var parts = document.location.pathname.split('/')
-      , base = parts.slice(0, parts.length - 1).join('/') + '/'
-      , resource = base.substring(1) + 'socket.io';
-
-    socket = io.connect(null, { resource: resource });
-  } else {
-    socket = io.connect();
+    var parts = document.location.pathname.split('/');
+    base = parts.slice(0, parts.length - 1).join('/').substring(1) + '/';
   }
+  var socket = io.connect(null, { resource: base + 'socket.io' });
 
   wm.windows = [];
 
@@ -81,13 +87,10 @@ wm.open = function() {
   });
 
   socket.on('render', function(data) {
-    var x = new XMLHttpRequest();
-    x.onreadystatechange = function() {
-      if (x.readyState == 4 && x.status == 200) {
-        // infer id
-        var res = x.responseText.match(/dom_(\d*)/);
-        var divid = res[1];
-
+    var divid = data.match(/dom_(\d*)/)[0];
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState == 4 && xhr.status == 200) {
         // create new pane for resource:
         var el = document.getElementById('pane_' + divid);
         if (!el) {
@@ -99,17 +102,19 @@ wm.open = function() {
         } else {
           console.log('reusing pane with ID = ' + divid);
         }
-        el.innerHTML = x.responseText;
+        el.innerHTML = xhr.responseText;
 
         // force script eval:
         var scripts = el.getElementsByTagName('script');
-        for (var ix = 0; ix < scripts.length; ix++) {
-          eval(scripts[ix].text);
+        for (var i = 0; i < scripts.length; ++i) {
+          eval(scripts[i].text);
         }
+        console.log('sending resize after render');
+        dispatchResize(divid);
       }
     };
-    x.open('GET', data, true);
-    x.send();
+    xhr.open('GET', data, true);
+    xhr.send();
   });
 
 
@@ -174,8 +179,6 @@ function Pane(divid) {
   title.innerHTML = '';
 
   this.divid = divid;
-  // TODO(szym): check localStorage for position info and restore it
-
   this.element = el;
   this.grip = grip;
   this.bar = bar;
@@ -192,6 +195,18 @@ function Pane(divid) {
 
   this.focus();
   this.bind();
+
+  var position = JSON.parse(localStorage.getItem(divid) || 'false');
+  if (position) {
+    if (position.maximized) {
+      this.maximize();
+    } else {
+      el.style.left = position.left;
+      el.style.top = position.top;
+      el.style.width = position.width;
+      el.style.height = position.height;
+    }
+  }
 }
 
 Pane.prototype.bind = function() {
@@ -220,7 +235,7 @@ Pane.prototype.bind = function() {
     cancel(ev);
 
     // handle double-click
-    if (new Date - last < 600) {
+    if (new Date - last < 300) {
       return self.maximize();
     }
     last = new Date;
@@ -240,7 +255,16 @@ Pane.prototype.focus = function() {
 };
 
 Pane.prototype.save = function() {
-  // TODO(szym): save position from style and status (minimized/maximized) into localStorage
+  var el = this.element;
+  var position = {
+    left: el.style.left,
+    top: el.style.top,
+    width: el.style.width,
+    height: el.style.height,
+    maximized: false, // ('minimize' in this),
+  };
+  localStorage.setItem(this.divid, JSON.stringify(position));
+  dispatchResize(this.divid);
 }
 
 Pane.prototype.destroy = function() {
@@ -251,6 +275,7 @@ Pane.prototype.destroy = function() {
 
   splice(wm.windows, this);
   this.element.parentNode.removeChild(this.element);
+  localStorage.removeItem(this.divid);
 };
 
 Pane.prototype.drag = function(ev) {
@@ -299,7 +324,7 @@ Pane.prototype.resizing = function(ev) {
     h: el.clientHeight
   };
 
-  el.style.overflow = 'hidden';
+  //el.style.overflow = 'hidden';
   el.style.opacity = '0.70';
   el.style.cursor = 'se-resize';
   root.style.cursor = 'se-resize';
@@ -315,16 +340,7 @@ Pane.prototype.resizing = function(ev) {
   function up(ev) {
     move(ev);
 
-    // TODO(szym): clean this up, this should be done via CSS.
-    var elch = el.children[2].getElementsByTagName("img");
-    for (i = 0; i < elch.length; i++) {
-      if (elch[i].style.width != null) {
-        elch[i].style.width = '100%';
-        elch[i].style.height = '100%';
-      }
-    }
-
-    // el.style.overflow = '';
+    //el.style.overflow = '';
     el.style.opacity = '';
     el.style.cursor = '';
     root.style.cursor = '';
@@ -341,11 +357,14 @@ Pane.prototype.maximize = function() {
   if (this.minimize) return this.minimize();
 
   var self = this
-    , el = this.element;
+    , el = this.element
+    , grip = this.grip;
 
   var m = {
     left: el.offsetLeft,
     top: el.offsetTop,
+    width: el.clientWidth,
+    height: el.clientHeight,
     root: root.className
   };
 
@@ -354,10 +373,10 @@ Pane.prototype.maximize = function() {
 
     el.style.left = m.left + 'px';
     el.style.top = m.top + 'px';
-    el.style.width = '';
-    el.style.height = '';
+    el.style.width = m.width + 'px';
+    el.style.height = m.height + 'px';
     el.style.boxSizing = '';
-    self.grip.style.display = '';
+    grip.style.display = '';
     root.className = m.root;
     self.save();
   };
@@ -369,7 +388,7 @@ Pane.prototype.maximize = function() {
   el.style.width = '100%';
   el.style.height = '100%';
   el.style.boxSizing = 'border-box';
-  this.grip.style.display = 'none';
+  grip.style.display = 'none';
   root.className = 'maximized';
   self.save();
 };
