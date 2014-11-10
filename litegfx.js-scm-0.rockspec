@@ -1,9 +1,8 @@
-package = "litegfx.js"
+package = "litegfx"
 version = "scm-0"
 
 source = {
    url = "git://github.com/szym/litegfx.js",
-   dir = "litegfx.js"
 }
 
 description = {
@@ -26,5 +25,8 @@ dependencies = {
 build = {
    type = "command",
    build_command = "ls",
-   install_command = "bash install.sh"
+   install_command = "bash install.sh",
+   install = {
+      lua = {["init"] = "init.lua"}
+   }
 }
