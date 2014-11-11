@@ -28,7 +28,7 @@ local M = {
 
 
 -- load templates
-for file in io.popen('ls -1 ' .. templatedir):lines() do
+for file in io.popen('ls -1 "' .. templatedir .. '"'):lines() do
   if file:find('html$') then
     local f = io.open(templatedir .. file)
     local template = f:read('*all')
@@ -295,7 +295,7 @@ end
 
 function M.clear()
   print('[gfx.M] clearing all cached graphics')
-  for filename in io.popen('ls -1 ' .. static):lines() do
+  for filename in io.popen('ls -1 "' .. static .. '"'):lines() do
     os.remove(static ..filename)
   end
 end
