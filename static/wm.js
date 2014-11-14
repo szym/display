@@ -2,6 +2,7 @@
 
 // Window management for litegfx.js
 // Copyright 2014, Szymon Jakubczak
+// Based on https://github.com/chjj/tty.js by Christopher Jeffrey
 //
 (function() {
 
@@ -12,7 +13,6 @@ var document = this.document
   , window = this
   , root
   , body;
-
 
 ///////////
 // Helpers
@@ -57,8 +57,6 @@ function dispatchResize(divid) {
 // wm
 
 var wm = {};
-
-wm.windows;
 
 wm.open = function() {
   var base = '';
@@ -143,9 +141,7 @@ wm.reset = function() {
 };
 
 wm.toggleLights = function() {
-  root.className = !root.className
-    ? 'dark'
-    : '';
+  root.className = !root.className ? 'dark' : '';
 };
 
 ////////
@@ -181,8 +177,6 @@ function Pane(divid) {
   this.divid = divid;
   this.element = el;
   this.grip = grip;
-  this.bar = bar;
-  this.button = button;
   this.title = title;
 
   el.appendChild(grip);
@@ -192,30 +186,6 @@ function Pane(divid) {
   body.appendChild(el);
 
   wm.windows.push(this);
-
-  this.focus();
-  this.bind();
-
-  var position = JSON.parse(localStorage.getItem(divid) || 'false');
-  if (position) {
-    if (position.maximized) {
-      this.maximize();
-    } else {
-      el.style.left = position.left;
-      el.style.top = position.top;
-      el.style.width = position.width;
-      el.style.height = position.height;
-    }
-  }
-}
-
-Pane.prototype.bind = function() {
-  var self = this
-    , el = this.element
-    , bar = this.bar
-    , grip = this.grip
-    , button = this.button
-    , last = 0;
 
   on(button, 'click', function(ev) {
     self.destroy();
@@ -228,6 +198,7 @@ Pane.prototype.bind = function() {
     return cancel(ev);
   });
 
+  var last = 0;
   on(el, 'mousedown', function(ev) {
     if (ev.target !== el && ev.target !== bar) return;
 
@@ -243,7 +214,21 @@ Pane.prototype.bind = function() {
     self.drag(ev);
     return cancel(ev);
   });
-};
+
+  this.focus();
+
+  var position = JSON.parse(localStorage.getItem(divid) || 'false');
+  if (position) {
+    if (position.maximized) {
+      this.maximize();
+    } else {
+      el.style.left = position.left;
+      el.style.top = position.top;
+      el.style.width = position.width;
+      el.style.height = position.height;
+    }
+  }
+}
 
 Pane.prototype.focus = function() {
   // Restack
@@ -292,7 +277,6 @@ Pane.prototype.drag = function(ev) {
   };
 
   el.style.opacity = '0.60';
-  el.style.cursor = 'move';
   root.style.cursor = 'move';
 
   function move(ev) {
@@ -302,7 +286,6 @@ Pane.prototype.drag = function(ev) {
 
   function up() {
     el.style.opacity = '';
-    el.style.cursor = '';
     root.style.cursor = '';
 
     off(document, 'mousemove', move);
@@ -324,25 +307,18 @@ Pane.prototype.resizing = function(ev) {
     h: el.clientHeight
   };
 
-  //el.style.overflow = 'hidden';
   el.style.opacity = '0.70';
-  el.style.cursor = 'se-resize';
   root.style.cursor = 'se-resize';
 
   function move(ev) {
-    var x, y;
-    x = (ev.pageX - el.offsetLeft);
-    y = (ev.pageY - el.offsetTop); // - el.offsetHeight;
-    el.style.width = x + 'px';
-    el.style.height = y + 'px';
+    el.style.width = (ev.pageX - el.offsetLeft) + 'px';
+    el.style.height = (ev.pageY - el.offsetTop) + 'px';
   }
 
   function up(ev) {
     move(ev);
 
-    //el.style.overflow = '';
     el.style.opacity = '';
-    el.style.cursor = '';
     root.style.cursor = '';
     off(document, 'mousemove', move);
     off(document, 'mouseup', up);
@@ -397,17 +373,11 @@ Pane.prototype.maximize = function() {
 // Load
 
 function load() {
-  if (load.done) return;
-  load.done = true;
-
-  off(document, 'load', load);
-  off(document, 'DOMContentLoaded', load);
   wm.open();
+  off(document, 'DOMContentLoaded', load);
 }
 
-on(document, 'load', load);
 on(document, 'DOMContentLoaded', load);
-setTimeout(load, 5000);
 
 }).call(function() {
   return this || (typeof window !== 'undefined' ? window : global);
