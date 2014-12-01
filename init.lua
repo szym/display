@@ -121,6 +121,7 @@ end
 function M.images(images, opts)
   -- options:
   opts = opts or {}
+  -- TODO(szym): fixme #Tensor is size() not size(1)
   local nperrow = opts.nperrow or math.floor(math.sqrt(#images))
   local zoom = opts.zoom or 1
   local width = opts.width or 1200   -- max width

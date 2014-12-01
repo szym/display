@@ -340,8 +340,10 @@ Pane.prototype.zoom = function(ev) {
   // Don't shrink below 100px.
   if (content.clientWidth * scale < 100) scale = 100 / content.clientWidth;
 
+  // Note, style is applied immediately, so changing style.width might change clientHeight.
+  var clientHeight = content.clientHeight;
   content.style.width = content.clientWidth * scale + 'px';
-  content.style.height = content.clientHeight * scale + 'px';
+  content.style.height = clientHeight * scale + 'px';
 
   this.moveContent(content.offsetLeft + (1 - scale) * ev.layerX, content.offsetTop + (1 - scale) * ev.layerY);
 };

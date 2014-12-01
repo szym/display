@@ -2,7 +2,7 @@
 
 set -e
 
-DEST=${1:-"~/.litegfx.js"}
+DEST=${1:-"$HOME/.litegfx.js"}
 
 mkdir -p ${DEST}
 cp README.md package.json run.js server.js ${DEST}
