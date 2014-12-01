@@ -9,7 +9,6 @@ function Server() {
   var app = express();
   var server = http.createServer(app);
 
-  var sessions = {};
   var ioserver = io.listen(server, { log: true, 'close timeout': 5 });
 
   // TODO: add { lastModified: false, etag: false } if necessary

@@ -321,6 +321,12 @@ Pane.prototype.maximize = function() {
 
 Pane.prototype.moveContent = function(left, top) {
   var el = this.element, content = this.content;
+  if (!content.style.position) {
+    // Until the content is first move, it is positioned statically, so remember current size in |el|.
+    el.style.width = Math.min(root.clientWidth - el.offsetLeft, el.clientWidth) + 'px';
+    el.style.height = Math.min(root.clientHeight - el.offsetTop, el.clientHeight) + 'px';
+    content.style.position = 'absolute';
+  }
   content.style.left = Math.min(0, Math.max(el.clientWidth - content.clientWidth, left)) + 'px';
   content.style.top = Math.min(0, Math.max(el.clientHeight - content.clientHeight, top)) + 'px';
 }

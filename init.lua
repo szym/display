@@ -10,7 +10,6 @@ local gm = require 'graphicsmagick'
 local torch = require 'torch'
 
 local home = os.getenv('HOME') .. '/.litegfx.js/'
-home = '/home/szym/workspace/litegfx.js/'
 
 if not os.execute('test -e ' .. home) then
   print('Warning: litegfx.js was not property installed in ' .. home)
@@ -50,15 +49,18 @@ local function uid()
 end
 
 
-local function renderImage(img, opts)
-  opts = opts or {}
-
+local function normalize(img, opts)
   -- rescale image to 0 .. 1
   local min = opts.min or img:min()
   local max = opts.max or img:max()
 
   img = torch.FloatTensor(img:size()):copy(img)
   img:add(-min):mul(1/(max-min))
+end
+
+
+local function renderImage(img, opts)
+  normalize(img, opts)
 
   local win = opts.win or uid()
   local filename = win .. '.png'
@@ -127,35 +129,36 @@ function M.images(images, opts)
   local legend = opts.legend
   local win = opts.win or uid()      -- id of the window to be reused
 
-  -- do all images:
-  local renders = {}
-  local maxwidth, maxheight = 0, 0
-  for i,img in ipairs(images) do
-    html, win = renderImage(img, {
-      legend = legends[i] or (i==1 and legend) or (not legend and ('Image #' .. i)) or '',
-    })
-    -- TODO: compute maxwidth, maxheight
+  local maxsize = {0, 0, 0}
+  for i, img in ipairs(images) do
+    normalize(img, opts)
+    if img:nDimension() == 2 then
+      img = torch.expand(img:view(1, img:size(1), img:size(2)), maxsize[1], img:size(1), img:size(2))
+      images[i] = img
+    end
+    maxsize[1] = math.max(maxsize[1], img:size(1))
+    maxsize[2] = math.max(maxsize[2], img:size(2))
+    maxsize[3] = math.max(maxsize[3], img:size(3))
+  end
+  print (maxsize)
 
-    table.insert(renders, html)
+  -- merge all images onto one big canvas
+  local numrows = math.ceil(#images / nperrow)
+  local canvas = torch.FloatTensor(maxsize[1], maxsize[2] * numrows, maxsize[3] * nperrow)
+  local row = 0
+  local col = 0
+  for i, img in ipairs(images) do
+    canvas:narrow(2, maxsize[2] * row + 1, img:size(2)):narrow(3, maxsize[3] * col + 1, img:size(3)):copy(img)
+    col = col + 1
+    if col == nperrow then
+      col = 0
+      row = row + 1
+    end
   end
 
-  -- TODO(szym)
-  -- want container with zoom controls
-
-  -- generate container:
-  local width = math.min(width, (maxwidth + 4) * math.min(#images, nperrow))
-  local height = math.min(height, math.ceil(#images / nperrow) * (maxheight + 4))
-  local html = template.substitute(M.templates.window, {
-    width = width, 
-    height = height, 
-    content = table.concat(renders, '\n')
-  })
-  local f = io.open(static .. win .. '.html', 'w')
-  f:write(html)
-  f:close()
-  log(win)
-
-  return win
+  -- TODO: position legends relative to content
+  opts.width = maxsize[3] * nperrow
+  return M.image(canvas, opts)
 end
 
 
