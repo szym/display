@@ -24,7 +24,7 @@ function Server() {
     }
   }
 
-  var watcher = chokidar.watch(__dirname + '/static/data/', {ignoreInitial: true});
+  var watcher = chokidar.watch(__dirname + '/static/data/');
   watcher.on('add', onwatch);
   watcher.on('change', onwatch);
 

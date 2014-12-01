@@ -1,23 +1,45 @@
+// Simple SVG download routines.
+// Copyright 2014, Szymon Jakubczak, szym@szym.net
+(function() {
+  'use strict';
+  var out$ = typeof exports != 'undefined' && exports || window;
 
-function saveSvg(svg, filename) {
-  var svg = (new XMLSerializer).serializeToString(svg);
-  window.URL = window.webkitURL || window.URL;
+  function download(url, mimetype, filename) {
+    var a = document.createElement('a');
+    a.download = filename;
+    a.href = url;
+    document.body.appendChild(a);
 
-  var bb = new Blob([ svg ], { type:'text/svg' });
+    a.addEventListener('click', function(e) {
+      setTimeout(function() {
+        URL.revokeObjectURL(a.href);
+      }, 1500);
+      a.remove();
+    });
+    a.click();
+  }
 
-  var a = document.createElement('a');
-  a.download = filename;
-  a.href = window.URL.createObjectURL(bb);
-  a.dataset.downloadurl = ['text/svg', a.download, a.href].join(':');
+  function downloadImage(uri, mimetype, filename) {
+    var image = new Image();
+    image.src = uri;
+    image.onload = function() {
+      var canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      canvas.getContext('2d').drawImage(image, 0, 0);
+      download(canvas.toDataURL(mimetype), filename);
+    }
+  }
 
-  document.body.appendChild(a);
+  out$.saveSvgAsPng = function(el, filename) {
+    var svg = (new XMLSerializer).serializeToString(el);
+    var uri = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+    downloadImage(uri, 'image/png', filename);
+  }
 
-  a.addEventListener('click', function(e) {
-    setTimeout(function() {
-      window.URL.revokeObjectURL(a.href);
-    }, 1500);
-    a.remove();
-  });
-
-  a.click();
-}
+  out$.saveSvg = function(el, filename) {
+    var svg = (new XMLSerializer).serializeToString(el);
+    var blob = new Blob([ svg ], { type:'text/svg' });
+    download(URL.createObjectURL(blob), filename);
+  }
+})();

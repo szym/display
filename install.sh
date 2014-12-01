@@ -2,11 +2,11 @@
 
 set -e
 
-DEST=~/.litegfx.js
+DEST=${1:-"~/.litegfx.js"}
 
 mkdir -p ${DEST}
 cp README.md package.json run.js lib.js ${DEST}
-cp -r static templates  ${DEST}/
+cp -r static templates ${DEST}/
 mkdir -p ${DEST}/static/data
 
 echo '==> Installing package'

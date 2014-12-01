@@ -10,6 +10,7 @@ local gm = require 'graphicsmagick'
 local torch = require 'torch'
 
 local home = os.getenv('HOME') .. '/.litegfx.js/'
+home = '/home/szym/workspace/litegfx.js/'
 
 if not os.execute('test -e ' .. home) then
   print('Warning: litegfx.js was not property installed in ' .. home)
@@ -49,7 +50,7 @@ local function uid()
 end
 
 
-local function render(img, opts)
+local function renderImage(img, opts)
   opts = opts or {}
 
   -- rescale image to 0 .. 1
@@ -104,7 +105,7 @@ function M.image(img, opts)
     return M.images(images, opts)
   end
 
-  html, win = render(img, opts)
+  html, win = renderImage(img, opts)
 
   local f = io.open(static .. win .. '.html', 'w')
   f:write(html)
@@ -128,9 +129,9 @@ function M.images(images, opts)
 
   -- do all images:
   local renders = {}
-  local maxwidth,maxheight = 0,0
+  local maxwidth, maxheight = 0, 0
   for i,img in ipairs(images) do
-    html, win = render(img, {
+    html, win = renderImage(img, {
       legend = legends[i] or (i==1 and legend) or (not legend and ('Image #' .. i)) or '',
     })
     -- TODO: compute maxwidth, maxheight

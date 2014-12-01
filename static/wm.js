@@ -33,24 +33,10 @@ function cancel(ev) {
   return false;
 }
 
-function indexOf(obj, el) {
-  var i = obj.length;
-  while (i--) {
-    if (obj[i] === el) return i;
-  }
-  return -1;
-}
-
-function splice(obj, el) {
-  var i = indexOf(obj, el);
-  if (~i) obj.splice(i, 1);
-}
-
-function dispatchResize(divid) {
+function dispatchEvent(el, type) {
   var ev = document.createEvent('Event');
-  ev.initEvent('resizepane', true, true);
-  // TODO: refactor the pane_ + divid logic
-  document.getElementById('pane_' + divid).dispatchEvent(ev);
+  ev.initEvent(type, true, true);
+  el.dispatchEvent(ev);
 }
 
 /////////
@@ -66,82 +52,38 @@ wm.open = function() {
   }
   var socket = io.connect(null, { resource: base + 'socket.io' });
 
-  wm.windows = [];
+  wm.windows = {};
 
   root = document.documentElement;
   body = document.body;
-  var lights = document.getElementById('lights');
-
-  wm.toggleLights(); /* make dark mode the default light-scheme */
-
-  if (lights) {
-    on(lights, 'click', function() {
-      wm.toggleLights();
-    });
-  }
-
-  socket.on('connect', function() {
-    wm.reset();
-  });
 
   socket.on('render', function(data) {
     var divid = data.match(/dom_(\d*)/)[0];
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
       if (xhr.readyState == 4 && xhr.status == 200) {
-        // create new pane for resource:
-        var el = document.getElementById('pane_' + divid);
-        if (!el) {
-          var pane = new Pane(divid);
-          el = document.createElement('span');
-          el.setAttribute('id', 'pane_' + divid);
+        var pane = wm.windows[divid];
+        if (!pane) {
+          pane = new Pane(divid);
           console.log('creating new pane with ID = ' + divid);
-          pane.element.appendChild(el);
-        } else {
-          console.log('reusing pane with ID = ' + divid);
+          // TODO: set default width/height to something reasonable...
         }
-        el.innerHTML = xhr.responseText;
+        var content = pane.content;
+        content.innerHTML = xhr.responseText;
+        pane.zoomable = (content.getElementsByClassName('zoomable').length > 0);
 
         // force script eval:
-        var scripts = el.getElementsByTagName('script');
+        var scripts = content.getElementsByTagName('script');
         for (var i = 0; i < scripts.length; ++i) {
           eval(scripts[i].text);
         }
-        console.log('sending resize after render');
-        dispatchResize(divid);
+        if (content.parentNode.style.height)
+          dispatchEvent(content, 'resizepane');
       }
     };
     xhr.open('GET', data, true);
     xhr.send();
   });
-
-
-  // Keep windows maximized.
-  on(window, 'resize', function() {
-    var i = wm.windows.length
-      , win;
-
-    while (i--) {
-      win = wm.windows[i];
-      if (win.minimize) {
-        win.minimize();
-        win.maximize();
-      }
-    }
-  });
-};
-
-wm.reset = function() {
-  var i = wm.windows.length;
-  while (i--) {
-    wm.windows[i].destroy();
-  }
-
-  wm.windows = [];
-};
-
-wm.toggleLights = function() {
-  root.className = !root.className ? 'dark' : '';
 };
 
 ////////
@@ -150,42 +92,43 @@ wm.toggleLights = function() {
 function Pane(divid) {
   var self = this;
 
-  var el
-    , grip
-    , bar
-    , button
-    , title;
-
-  el = document.createElement('div');
+  var el = document.createElement('div');
   el.className = 'window';
 
-  grip = document.createElement('div');
+  var grip = document.createElement('div');
   grip.className = 'grip';
 
-  bar = document.createElement('div');
+  var bar = document.createElement('div');
   bar.className = 'bar';
 
-  button = document.createElement('div');
+  var button = document.createElement('div');
   button.innerHTML = 'x';
   button.title = 'close';
   button.className = 'tab';
 
-  title = document.createElement('div');
+  var title = document.createElement('div');
   title.className = 'title';
   title.innerHTML = '';
+
+  var content = document.createElement('div');
+  content.className = 'content';
 
   this.divid = divid;
   this.element = el;
   this.grip = grip;
   this.title = title;
+  this.content = content;
 
   el.appendChild(grip);
   el.appendChild(bar);
+  el.appendChild(content);
   bar.appendChild(button);
   bar.appendChild(title);
   body.appendChild(el);
 
-  wm.windows.push(this);
+  wm.windows[divid] = this;
+
+  this.zoomable = false;
 
   on(button, 'click', function(ev) {
     self.destroy();
@@ -198,20 +141,33 @@ function Pane(divid) {
     return cancel(ev);
   });
 
-  var last = 0;
   on(el, 'mousedown', function(ev) {
     if (ev.target !== el && ev.target !== bar) return;
-
     self.focus();
-    cancel(ev);
-
-    // handle double-click
-    if (new Date - last < 300) {
-      return self.maximize();
-    }
-    last = new Date;
-
     self.drag(ev);
+    return cancel(ev);
+  });
+
+  on(bar, 'dblclick', function(ev) {
+    self.maximize();
+  });
+
+  on(content, 'wheel', function(ev) {
+    if (!self.zoomable) return;
+    self.zoom(ev);
+    return cancel(ev);
+  });
+
+  on(content, 'mousedown', function(ev) {
+    if (!self.zoomable) return;
+    self.focus();
+    self.pan(ev);
+    return cancel(ev);
+  });
+
+  on(content, 'dblclick', function(ev) {
+    if (!self.zoomable) return;
+    self.reset();
     return cancel(ev);
   });
 
@@ -231,7 +187,8 @@ function Pane(divid) {
 }
 
 Pane.prototype.focus = function() {
-  // Restack
+  // Restack, but only if not already last.
+  if (!this.element.nextSibling) return;
   var parent = this.element.parentNode;
   if (parent) {
     parent.removeChild(this.element);
@@ -249,16 +206,13 @@ Pane.prototype.save = function() {
     maximized: false, // ('minimize' in this),
   };
   localStorage.setItem(this.divid, JSON.stringify(position));
-  dispatchResize(this.divid);
 }
 
 Pane.prototype.destroy = function() {
   if (this.destroyed) return;
   this.destroyed = true;
 
-  if (this.minimize) this.minimize();
-
-  splice(wm.windows, this);
+  delete wm.windows[this.divid];
   this.element.parentNode.removeChild(this.element);
   localStorage.removeItem(this.divid);
 };
@@ -270,18 +224,16 @@ Pane.prototype.drag = function(ev) {
   if (this.minimize) return;
 
   var drag = {
-    left: el.offsetLeft,
-    top: el.offsetTop,
-    pageX: ev.pageX,
-    pageY: ev.pageY
+    left: el.offsetLeft - ev.pageX,
+    top: el.offsetTop - ev.pageY,
   };
 
   el.style.opacity = '0.60';
   root.style.cursor = 'move';
 
   function move(ev) {
-    el.style.left = (drag.left + ev.pageX - drag.pageX) + 'px';
-    el.style.top = (drag.top + ev.pageY - drag.pageY) + 'px';
+    el.style.left = (drag.left + ev.pageX) + 'px';
+    el.style.top = (drag.top + ev.pageY) + 'px';
   }
 
   function up() {
@@ -323,6 +275,7 @@ Pane.prototype.resizing = function(ev) {
     off(document, 'mousemove', move);
     off(document, 'mouseup', up);
     self.save();
+    dispatchEvent(self.content, 'resizepane');
   }
 
   on(document, 'mousemove', move);
@@ -341,7 +294,6 @@ Pane.prototype.maximize = function() {
     top: el.offsetTop,
     width: el.clientWidth,
     height: el.clientHeight,
-    root: root.className
   };
 
   this.minimize = function() {
@@ -353,7 +305,6 @@ Pane.prototype.maximize = function() {
     el.style.height = m.height + 'px';
     el.style.boxSizing = '';
     grip.style.display = '';
-    root.className = m.root;
     self.save();
   };
 
@@ -365,8 +316,63 @@ Pane.prototype.maximize = function() {
   el.style.height = '100%';
   el.style.boxSizing = 'border-box';
   grip.style.display = 'none';
-  root.className = 'maximized';
   self.save();
+};
+
+Pane.prototype.moveContent = function(left, top) {
+  var el = this.element, content = this.content;
+  content.style.left = Math.min(0, Math.max(el.clientWidth - content.clientWidth, left)) + 'px';
+  content.style.top = Math.min(0, Math.max(el.clientHeight - content.clientHeight, top)) + 'px';
+}
+
+Pane.prototype.zoom = function(ev) {
+  var el = this.element, content = this.content;
+
+  var delta = (ev.deltaMode === ev.DOM_DELTA_PIXEL) ? ev.deltaY : ev.deltaY * 40;
+  var scale = Math.exp(delta / 800.);
+
+  // Don't shrink below 100px.
+  if (content.clientWidth * scale < 100) scale = 100 / content.clientWidth;
+
+  content.style.width = content.clientWidth * scale + 'px';
+  content.style.height = content.clientHeight * scale + 'px';
+
+  this.moveContent(content.offsetLeft + (1 - scale) * ev.layerX, content.offsetTop + (1 - scale) * ev.layerY);
+};
+
+Pane.prototype.pan = function(ev) {
+  var self = this, content = this.content;
+
+  var drag = {
+    left: content.offsetLeft  - ev.pageX,
+    top: content.offsetTop - ev.pageY,
+  };
+
+  content.style.cursor = 'move';
+
+  function move(ev) {
+    self.moveContent(drag.left + ev.pageX, drag.top + ev.pageY);
+  }
+
+  function up(ev) {
+    move(ev);
+
+    content.style.cursor = '';
+    off(document, 'mousemove', move);
+    off(document, 'mouseup', up);
+  }
+
+  on(document, 'mousemove', move);
+  on(document, 'mouseup', up);
+};
+
+Pane.prototype.reset = function() {
+  var c = this.content;
+
+  c.style.left = '';
+  c.style.top = '';
+  c.style.width ='';
+  c.style.height = '';
 };
 
 ////////
