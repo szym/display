@@ -3,49 +3,34 @@
 -- Based heavily on https://github.com/clementfarabet/gfx.js/blob/master/clients/torch/js.lua
 --
 
-local image = require 'image'
+local mime = require 'mime'
+local http = require 'socket.http'
+local ltn12 = require 'ltn12'
 local json = require 'cjson'
-local template = require('pl.template')
-local gm = require 'graphicsmagick'
+
+require 'image'  -- image module is broken for now
 local torch = require 'torch'
 
-local home = os.getenv('HOME') .. '/.litegfx.js/'
 
-if not os.execute('test -e ' .. home) then
-  print('Warning: litegfx.js was not property installed in ' .. home)
-  return {}
-end
-
-local templatedir = home .. 'templates/'
-local prefix = 'data/'
-local static = home .. 'static/' .. prefix 
-
-
-local M = {
-  verbose = true,
-  templates = {},
+M = {
+  url = 'http://localhost:8000/events'
 }
 
 
--- load templates
-for file in io.popen('ls -1 "' .. templatedir .. '"'):lines() do
-  if file:find('html$') then
-    local f = io.open(templatedir .. file)
-    local template = f:read('*all')
-    M.templates[file:gsub('%.html$', '')] = template
-  end
-end
-
-
-local function log(id)
-  if M.verbose then
-    print('[litegfx.js] rendering cell <' .. id .. '>')
-  end
-end
-
-
 local function uid()
-  return 'dom_' .. (os.time() .. math.random()):gsub('%.', '')
+  return 'pane_' .. (os.time() .. math.random()):gsub('%.', '')
+end
+
+
+local function send(command)
+  -- TODO: make this asynchronous, don't care about result, but don't want to block execution
+  command = json.encode(command)
+  http.request({
+    url = M.url,
+    method = 'POST',
+    headers = { ['content-length'] = #command, ['content-type'] = 'application/json' },
+    source = ltn12.source.string(command),
+  })
 end
 
 
@@ -59,39 +44,9 @@ local function normalize(img, opts)
 end
 
 
-local function renderImage(img, opts)
-  normalize(img, opts)
-
-  local win = opts.win or uid()
-  local filename = win .. '.png'
-  gm.save(static .. filename, img)
-
-  local width
-  if img:nDimension() == 2 then
-    width = img:size(2)
-  elseif img:nDimension() == 3 then
-    width = img:size(3)
-  else
-    error('image must have two or three dimensions')
-  end
- 
-  -- TODO(szym): allow manual zooming instead of opts.zoom
-  local zoom = opts.zoom or 1
-  -- render template:
-  local html = template.substitute(M.templates.image, {
-    width = width * zoom,
-    filename = prefix .. filename .. '?' .. os.time(),
-    legend = opts.legend or '',
-  })
-
-  return html, win
-end
-
-
 function M.image(img, opts)
   -- options:
   opts = opts or {}
-  local zoom = opts.zoom or 1
   local win = opts.win or uid()      -- id of the window to be reused
 
   if type(img) == 'table' then
@@ -99,7 +54,7 @@ function M.image(img, opts)
   end
 
   -- img is a collection?
-  if img:nDimension() == 4 or (img:nDimension() == 3 and img:size(1) > 3) then
+  if img:dim() == 4 or (img:dim() == 3 and img:size(1) > 3) then
     local images = {}
     for i = 1,img:size(1) do
       images[i] = img[i]
@@ -107,33 +62,39 @@ function M.image(img, opts)
     return M.images(images, opts)
   end
 
-  html, win = renderImage(img, opts)
+  normalize(img, opts)
 
-  local f = io.open(static .. win .. '.html', 'w')
-  f:write(html)
-  f:close()
-  log(win)
+  local width
+  if img:dim() == 2 then
+    width = img:size(2)
+  elseif img:dim() == 3 then
+    width = img:size(3)
+  else
+    error('image must have two or three dimensions')
+  end
 
+  -- I wish we could write to memory instead of on-disk file.
+  local filename = os.tmpname() .. '.png'
+  image.save(filename, img)
+
+  local file = io.open(filename, 'rb')
+  local imgdata = 'data:image/png;base64,' .. mime.b64(file:read('*all'))
+  file:close()
+
+  send({ command='image', id=win, src=imgdata, width=width, title=opts.title })
   return win
 end
 
 
 function M.images(images, opts)
-  -- options:
   opts = opts or {}
-  -- TODO(szym): fixme #Tensor is size() not size(1)
+  -- TODO: support legend/annotations
   local nperrow = opts.nperrow or math.floor(math.sqrt(#images))
-  local zoom = opts.zoom or 1
-  local width = opts.width or 1200   -- max width
-  local height = opts.height or 800  -- max height
-  local legends = opts.legends or {}
-  local legend = opts.legend
-  local win = opts.win or uid()      -- id of the window to be reused
 
-  local maxsize = {0, 0, 0}
+  local maxsize = {1, 0, 0}
   for i, img in ipairs(images) do
     normalize(img, opts)
-    if img:nDimension() == 2 then
+    if img:dim() == 2 then
       img = torch.expand(img:view(1, img:size(1), img:size(2)), maxsize[1], img:size(1), img:size(2))
       images[i] = img
     end
@@ -141,7 +102,6 @@ function M.images(images, opts)
     maxsize[2] = math.max(maxsize[2], img:size(2))
     maxsize[3] = math.max(maxsize[3], img:size(3))
   end
-  print (maxsize)
 
   -- merge all images onto one big canvas
   local numrows = math.ceil(#images / nperrow)
@@ -157,191 +117,51 @@ function M.images(images, opts)
     end
   end
 
-  -- TODO: position legends relative to content
-  opts.width = maxsize[3] * nperrow
   return M.image(canvas, opts)
 end
 
 
--- format datasets to
--- { 
---   { key='series 1', values={ { x=x0, y=y0 }, .. { x=xn, y=yn } } },
---   { key='series 2', ... }
--- }
--- each data point can optionally have size= for scatter chart
-local function format(data, chart)
-  -- data is a straight tensor?
-  if torch.typename(data) then
-    data = { values=data }
-  end
-
-  -- one dataset only?
-  if #data == 0 then
-    data = { data }
-  end
-
-  for i,dataset in ipairs(data) do
-    if torch.typename(dataset) or not dataset.values then
-      -- wrap straight data as a dataset
-      dataset = { values=dataset }
-      data[i] = dataset
-    end
-
-    -- legend:
-    dataset.key = dataset.key or ('Data #' .. i)
-
-    -- values:
-    local values = dataset.values
-    if type(values) == 'table' then
-      -- remap values:
-      if type(values[1]) == 'number' then
-        for i,value in ipairs(values) do
-          values[i] = { x=i-1, y=value }
-        end
-      elseif not values[1].x or not values[1].y then
-        for i,value in ipairs(values) do
-          value.x = value[1]
-          value.y = value[2]
-          value.size = value[3]
-        end
-      end
-
-    elseif torch.typename(values) then
-      -- remap tensor into {x=, y=, size=} values:
-      local vals = {}
-      if values:nDimension() == 1 then
-        for i = 1,values:size(1) do
-          vals[i] = { x=i-1, y=values[i] }
-        end
-
-      elseif values:nDimension() == 2 and values:size(2) == 2 then
-        for i = 1,values:size(1) do
-          vals[i] = { x=values[i][1], y=values[i][2] }
-        end
-
-      elseif values:nDimension() == 2 and values:size(2) == 3 then
-        for i = 1,values:size(1) do
-          vals[i] = { x=values[i][1], y=values[i][2], size=values[i][3] }
-        end
-
-      else
-        error('dataset.values could not be parsed')
-      end
-      dataset.values = vals
-    else
-      error('dataset.values must be a tensor or a table')
-    end
-  end
-
-  -- return formatted data:
-  return data
-end
-
-
--- chart?
-local charts = {
-  line = 'lineChart',
-  bar = 'discreteBarChart',
-  stacked = 'stackedAreaChart',
-  multibar = 'multiBarChart',
-  scatter = 'scatterChart',
-}
-function M.chart(data, opts)
-  -- args:
+-- data is either a 2-d torch.Tensor, or a list of lists
+-- opts.labels is a list of series names, e.g.
+-- plot({ { 1, 23 }, { 2, 12 } }, { labels={'iteration', 'score'} })
+-- first series is always the X-axis
+-- See http://dygraphs.com/options.html for supported options
+function M.plot(data, opts)
   opts = opts or {}
-  local width = opts.width or 600
-  local height = opts.height or 450
-  local background = opts.background or '#fff'
   local win = opts.win or uid()
-  local chart = opts.chart or 'line'
-  local xFormat = opts.xFormat or '.02e'
-  local yFormat = opts.yFormat or '.02e'
-  local xLabel = opts.xLabel or ''
-  local yLabel = opts.yLabel or ''
 
-  -- chart
-  chart = charts[chart]
-  if not chart then
-    print('unknown chart, must be one of:')
-    for c in pairs(charts) do
-      io.write(c .. ', ')
+  local dataset = {}
+  if torch.typename(data) then
+    for i = 1, data:size(1) do
+      local row = {}
+      for j = 1, data:size(2) do
+        table.insert(row, data[{i, j}])
+      end
+      table.insert(dataset, row)
     end
-    print('')
+  else
+    for i, v in ipairs(data) do
+      table.insert(dataset, v)
+    end
   end
 
-  -- format data
-  data = format(data, chart)
+  -- clone opts into options
+  options = {}
+  for k, v in pairs(opts) do
+    options[k] = v
+  end
 
-  -- export data:
-  local data_json = json.encode(data)
+  options.file = dataset
+  if options.labels then
+    options.xlabel = options.xlabel or options.labels[1]
+  end
 
-  -- generate html:
-  local html = template.substitute(M.templates.chart, {
-    id = win,   -- needed to refer from the script
-    width = width,
-    height = height,
-    data = data_json,
-    chart = chart,
-    background = background,
-    xFormat = xFormat,
-    yFormat = yFormat,
-    xLabel = xLabel,
-    yLabel = yLabel,
-  })
-  local f = io.open(static .. win .. '.html', 'w')
-  f:write(html)
-  f:close()
-  log(win)
+  -- Don't pass our options to dygraphs. 'title' is ok
+  options.win = nil
 
-  -- return win handle
+  send({ command='plot', id=win, title=opts.title, options=options })
   return win
 end
 
-
-function M.clear()
-  print('[gfx.M] clearing all cached graphics')
-  for filename in io.popen('ls -1 "' .. static .. '"'):lines() do
-    os.remove(static ..filename)
-  end
-end
-
-
-function M.redraw(id)
-  -- id: if number then it means redraw last N elements
-  -- if string, then it's an actual id
-  if type(id) == 'number' then
-    -- list last elements, and redraw them:
-    local ids = M.list(id)
-    for i = #ids,1,-1 do
-      M.redraw(ids[i])
-    end
-  else
-    -- ext?
-    if not id:find('html$') then
-      id = id .. '.html'
-    end
-    -- touch the resource will force a redraw (or a new draw if window was closed)
-    os.execute('touch "' .. static .. id .. '"')
-  end
-end
-
-
-function M.list(N)
-  -- default max
-  N = N or 10
-  -- list last N elements
-  local pipe = io.popen('ls -t "' .. static .. '"dom_*.html 2>/dev/null')
-  local ids = {}
-  for i = 1,N do
-    local line = pipe:read('*line')
-    if line then
-      local _,_,id = line:find('(dom_%d*)%.html$')
-      table.insert(ids,id)
-    else
-      break
-    end
-  end
-  return ids
-end
 
 return M

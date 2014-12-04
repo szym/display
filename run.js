@@ -11,8 +11,7 @@ function configure(config_path) {
   };
 }
 
-var server = require('./server.js').createServer();
+var server = require('./server.js')();
 var config = configure(__dirname + '/config.json');
-server.listen(config.port, config.hostname, function() {
-  console.log('Listening on http://%s:%s', config.hostname, config.port);
-});
+server.listen(config.port, config.hostname);
+console.log('Listening on http://%s:%s', config.hostname, config.port);

@@ -2,15 +2,13 @@
 
 set -e
 
-DEST=${1:-"$HOME/.litegfx.js"}
+DEST=${1:-"$HOME/.display"}
 
 mkdir -p ${DEST}
-cp README.md package.json run.js server.js ${DEST}
-cp -r static templates ${DEST}/
-mkdir -p ${DEST}/static/data
+cp -r README.md package.json run.js server.js static ${DEST}/
 
 echo '==> Installing package'
 cd ${DEST}
 npm install
 
-echo "Start litegfx.js by running ${DEST}/run.js"
+echo "Start display by running ${DEST}/run.js"

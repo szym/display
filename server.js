@@ -1,35 +1,49 @@
 var http = require('http')
-  , path = require('path')
   , express = require('express')
-  , io = require('socket.io')
-  , chokidar = require('chokidar');
+  , getRawBody = require('raw-body');
 
-
-function Server() {
+// Forwards any JSON POSTed to /events to an event-stream at /events.
+function createServer() {
   var app = express();
-  var server = http.createServer(app);
 
-  var ioserver = io.listen(server, { log: true, 'close timeout': 5 });
+  app.get('/events', function(req, res) {
+    function forwardEvent(data) {
+      res.write('name: update\ndata: ');
+      res.write(data);
+      res.write('\n\n');
+    }
 
-  // TODO: add { lastModified: false, etag: false } if necessary
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+
+    req.socket.setTimeout(Infinity);
+
+    req.once('close', function() {
+      app.removeListener('update', forwardEvent);
+    });
+
+    // exploit the fact that app is an EventEmitter
+    app.on('update', forwardEvent);
+  });
+
+  app.post('/events', function(req, res) {
+    getRawBody(req, {
+      length: req.headers['content-length'],
+      limit: '2mb',
+    }, function(err, body) {
+      if (err) return next(err);
+      app.emit('update', body);
+      res.status(200).end();
+    });
+  });
+
   app.use(express.static(__dirname + '/static'));
 
-  // Watch the /data/ directory and send updates to all sockets.
-  function onwatch(filename) {
-    var fpath = path.basename(filename);
-    if (fpath.match(/html$/)) {
-      console.log('Watch Event on file: %s -> rendering template into DOM.', fpath);
-      ioserver.emit('render', '/data/' + fpath);
-    }
-  }
-
-  var watcher = chokidar.watch(__dirname + '/static/data/');
-  watcher.on('add', onwatch);
-  watcher.on('change', onwatch);
-
-  server.app = app;
-  return server;
+  return app;
 };
 
 
-module.exports = { createServer: Server };
+module.exports = createServer;

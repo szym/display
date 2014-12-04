@@ -1,19 +1,15 @@
 {
-    "name": "litegfx.js",
+    "name": "display",
     "description": "A browser-based graphics server",
-    "author": "litegfx.js: Szymon Jakubczak",
-    "version": "0.1.1",
-    "main": "./lib.js",
+    "author": "Szymon Jakubczak",
+    "version": "0.2.1",
+    "main": "./server.js",
     "preferGlobal": false,
-    "repository": "git://github.com/szym/litegfx.js.git",
+    "repository": "git://github.com/szym/display.git",
     "keywords": ["graphics", "browser"],
     "dependencies": {
         "express": ">= 3.4.4",
-        "socket.io": ">= 1.1.0",
-        "chokidar": "0.10.5"
-    },
-    "optionalDependencies" : {
-        "fsevents": ">= 0.2.0"
+        "raw-body": ">= 1.3.0"
     },
     "engines": { "node": ">= 0.10.0" }
 }
