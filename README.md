@@ -37,3 +37,4 @@ See `example.lua` for sample usage.
     disp.image(image.lena())
     disp.plot(torch.cat(torch.linspace(0, 10, 10), torch.randn(10), 2))
 
+![](https://raw.github.com/szym/display/master/example.png)
