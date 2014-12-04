@@ -1,6 +1,6 @@
-# litegfx.js: a browser-based graphics server
+# display: a browser-based graphics server
 
-Forked from [gfx.js](https://github.com/clementfarabet/gfx.js/).
+Original forked from [gfx.js](https://github.com/clementfarabet/gfx.js/).
 
 The original goal was to remain compatible with the torch/python API of gfx.js,
 but remove the term.js/tty.js/pty.js stuff which is served just fine by ssh.
@@ -12,27 +12,28 @@ so that after reloading the window everything remains where it was left.
 
 ## Technical overview
 
-The basic approach is same as in gfx.js: the server watches a directory, and
-monitors the creation & modification of HTML files; upon modification / 
-creation, it creates a new window on the client side (browser), which simply
-renders the HTML. 
+The server is a trivial message forwarder:
 
-Clients are easy to develop: one simply needs to dump HTML into the watched
-directory to have it rendered by the browser.
+    POST /events -> EventSource('/events')
+
+The Lua client sends JSON commands directly to the server. The browser script
+interprets these commands, e.g.
+
+    { command: 'image', src: 'data:image/png;base64,....', title: 'lena' }
 
 ## Installation and usage
 
 Install via:
 
-    luarocks install https://raw.githubusercontent.com/szym/litegfx.js/master/litegfx.js-scm-0.rockspec
+    luarocks install https://raw.githubusercontent.com/szym/display/master/display-scm-0.rockspec
 
 Launch the server:
 
-    ~/.litegfx.js/run.js &
+    ~/.display/run.js &
 
-See [gfx.js](https://github.com/clementfarabet/gfx.js/) for usage with torch.
+See `example.lua` for sample usage.
 
-    gfx = require 'litegfx'
-    gfx.image(image.lena())
-    gfx.chart(torch.randn(10, 2))
+    disp = require 'display'
+    disp.image(image.lena())
+    disp.plot(torch.cat(torch.linspace(0, 10, 10), torch.randn(10), 2))
 
