@@ -41,6 +41,7 @@ local function normalize(img, opts)
 
   img = torch.FloatTensor(img:size()):copy(img)
   img:add(-min):mul(1/(max-min))
+  return img
 end
 
 
@@ -62,7 +63,7 @@ function M.image(img, opts)
     return M.images(images, opts)
   end
 
-  normalize(img, opts)
+  img = normalize(img, opts)
 
   local width
   if img:dim() == 2 then
