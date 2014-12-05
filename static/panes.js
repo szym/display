@@ -173,17 +173,17 @@ Pane.prototype = {
 
     if (this.minimize) return;
 
-    var drag = {
-      left: el.offsetLeft - ev.pageX,
-      top: el.offsetTop - ev.pageY,
+    var anchor = {
+      x: ev.pageX - el.offsetLeft,
+      y: ev.pageY - el.offsetTop,
     };
 
     el.style.opacity = '0.60';
     root.style.cursor = 'move';
 
     function move(ev) {
-      el.style.left = (drag.left + ev.pageX) + 'px';
-      el.style.top = Math.max(0, drag.top + ev.pageY) + 'px';
+      el.style.left = (ev.pageX - anchor.x) + 'px';
+      el.style.top = Math.max(0, ev.pageY - anchor.y) + 'px';
     }
 
     function up() {
@@ -203,23 +203,22 @@ Pane.prototype = {
     var self = this
       , el = this.element;
 
-    if (this.minimize) delete this.minimize;
-    var resize = {
-      w: el.clientWidth,
-      h: el.clientHeight
+    delete this.minimize;
+
+    var anchor = {
+      x: ev.pageX - el.offsetWidth,
+      y: ev.pageY - el.offsetHeight,
     };
 
     el.style.opacity = '0.70';
     root.style.cursor = 'se-resize';
 
     function move(ev) {
-      el.style.width = (ev.pageX - el.offsetLeft) + 'px';
-      el.style.height = (ev.pageY - el.offsetTop) + 'px';
+      el.style.width = (ev.pageX - anchor.x) + 'px';
+      el.style.height = (ev.pageY - anchor.y) + 'px';
     }
 
     function up(ev) {
-      move(ev);
-
       el.style.opacity = '';
       root.style.cursor = '';
       off(document, 'mousemove', move);
@@ -242,8 +241,8 @@ Pane.prototype = {
     var m = {
       left: el.offsetLeft,
       top: el.offsetTop,
-      width: el.clientWidth,
-      height: el.clientHeight,
+      width: el.offsetWidth,
+      height: el.offsetHeight,
     };
 
     this.minimize = function() {
@@ -253,7 +252,6 @@ Pane.prototype = {
       el.style.top = m.top + 'px';
       el.style.width = m.width + 'px';
       el.style.height = m.height + 'px';
-      el.style.boxSizing = '';
       grip.style.display = '';
       self.save();
       if (self.onresize) self.onresize();
@@ -265,7 +263,6 @@ Pane.prototype = {
     el.style.top = '0px';
     el.style.width = '100%';
     el.style.height = '100%';
-    el.style.boxSizing = 'border-box';
     grip.style.display = 'none';
     self.save();
     if (self.onresize) self.onresize();
@@ -309,12 +306,12 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
     var el = this.element, content = this.content;
     if (!content.style.position) {
       // Until the content is first moved, it is positioned statically, so remember current size in |el|.
-      el.style.width = Math.min(root.clientWidth - el.offsetLeft, el.clientWidth) + 'px';
-      el.style.height = Math.min(root.clientHeight - el.offsetTop, el.clientHeight) + 'px';
+      el.style.width = Math.min(root.clientHeight - el.offsetLeft, el.offsetWidth) + 'px';
+      el.style.height = Math.min(root.clientHeight - el.offsetTop, el.offsetHeight) + 'px';
       content.style.position = 'absolute';
     }
-    content.style.left = Math.min(0, Math.max(el.clientWidth - content.clientWidth, left)) + 'px';
-    content.style.top = Math.min(0, Math.max(el.clientHeight - content.clientHeight, top)) + 'px';
+    content.style.left = Math.min(0, Math.max(el.offsetWidth - content.offsetWidth, left)) + 'px';
+    content.style.top = Math.min(0, Math.max(el.offsetHeight - content.offsetHeight, top)) + 'px';
   },
 
   zoom: function(ev) {
@@ -324,12 +321,12 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
     var scale = Math.exp(delta / 800.);
 
     // Don't shrink below 100px.
-    if (content.clientWidth * scale < 100) scale = 100 / content.clientWidth;
+    if (content.offsetWidth * scale < 100) scale = 100 / content.offsetWidth;
 
-    // Note, style is applied immediately, so changing style.width might change clientHeight.
-    var clientHeight = content.clientHeight;
-    content.style.width = content.clientWidth * scale + 'px';
-    content.style.height = clientHeight * scale + 'px';
+    // Note, style is applied immediately, so changing style.width might change offsetHeight.
+    var height = content.offsetHeight;
+    content.style.width = content.offsetWidth * scale + 'px';
+    content.style.height = height * scale + 'px';
 
     this.moveContent(content.offsetLeft + (1 - scale) * ev.layerX,
                      content.offsetTop + (1 - scale) * ev.layerY);

@@ -17,6 +17,7 @@ html {
 
 .window {
   overflow: hidden;
+  box-sizing: border-box;
   padding-top: 18px;
   border: #555 solid 1px;
   background: #ccc;
