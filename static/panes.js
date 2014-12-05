@@ -183,7 +183,7 @@ Pane.prototype = {
 
     function move(ev) {
       el.style.left = (drag.left + ev.pageX) + 'px';
-      el.style.top = (drag.top + ev.pageY) + 'px';
+      el.style.top = Math.max(0, drag.top + ev.pageY) + 'px';
     }
 
     function up() {
