@@ -2,31 +2,30 @@ var http = require('http')
   , express = require('express')
   , getRawBody = require('raw-body');
 
-// Forwards any JSON POSTed to /events to an event-stream at /events.
+// Forwards any data POSTed to /events to an event-stream at /events.
+// Serves files from /static otherwise.
 function createServer() {
   var app = express();
 
   app.get('/events', function(req, res) {
-    function forwardEvent(data) {
-      res.write('name: update\ndata: ');
-      res.write(data);
-      res.write('\n\n');
-    }
-
+    req.socket.setTimeout(Infinity);
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
     });
 
-    req.socket.setTimeout(Infinity);
-
-    req.once('close', function() {
-      app.removeListener('update', forwardEvent);
-    });
+    function forwardEvent(data) {
+      res.write('name: update\ndata: ');
+      res.write(data);
+      res.write('\n\n');
+    }
 
     // exploit the fact that app is an EventEmitter
     app.on('update', forwardEvent);
+    req.once('close', function() {
+      app.removeListener('update', forwardEvent);
+    });
   });
 
   app.post('/events', function(req, res) {
