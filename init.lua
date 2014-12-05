@@ -106,7 +106,7 @@ function M.images(images, opts)
 
   -- merge all images onto one big canvas
   local numrows = math.ceil(#images / nperrow)
-  local canvas = torch.FloatTensor(maxsize[1], maxsize[2] * numrows, maxsize[3] * nperrow)
+  local canvas = torch.FloatTensor(maxsize[1], maxsize[2] * numrows, maxsize[3] * nperrow):fill(0.5)
   local row = 0
   local col = 0
   for i, img in ipairs(images) do
