@@ -16,7 +16,7 @@ function createServer() {
     });
 
     function forwardEvent(data) {
-      res.write('name: update\ndata: ');
+      res.write('data: ');
       res.write(data);
       res.write('\n\n');
     }
