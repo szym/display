@@ -66,6 +66,10 @@ html {
   top: 2px;
   font-size: 11px;
   cursor: default;
+  -webkit-user-select: none;
+  -moz-user-select: -moz-none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .grip {

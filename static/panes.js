@@ -106,7 +106,7 @@ function Pane(id) {
 
   on(el, 'mousedown', function(ev) {
     self.focus();
-    if (ev.target !== el && ev.target !== bar) return;
+    if (ev.target !== el && ev.target !== bar && ev.target !== title) return;
     self.drag(ev);
     return cancel(ev);
   });
@@ -274,9 +274,8 @@ Pane.prototype = {
 function ImagePane(id) {
   Pane.call(this, id);
 
-  var self = this;
-
-  var content = this.content;
+  var self = this
+    , content = this.content;
 
   var image = document.createElement('img');
   image.className = 'content-image';
@@ -299,6 +298,17 @@ function ImagePane(id) {
   on(content, 'dblclick', function(ev) {
     self.reset();
     return cancel(ev);
+  });
+
+  var width, height;
+
+  // FIXME: not called if src is a data URL
+  on(content, 'load', function(ev) {
+    if ((content.naturalWidth != width) || (content.naturalHeight != height)) {
+      width = content.naturalWidth;
+      height = content.naturalHeight;
+      self.reset();
+    }
   });
 }
 
@@ -372,7 +382,7 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
     this.content.src = src;
     this.content.width = width;
     // TODO: support annotations
-    this.reset();
+    // this.reset();
   },
 });
 
