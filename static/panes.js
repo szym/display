@@ -104,8 +104,8 @@ function Pane(id) {
   });
 
   on(el, 'mousedown', function(ev) {
-    if (ev.target !== el && ev.target !== bar) return;
     self.focus();
+    if (ev.target !== el && ev.target !== bar) return;
     self.drag(ev);
     return cancel(ev);
   });
