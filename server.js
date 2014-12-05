@@ -1,3 +1,6 @@
+// https://github.com/szym/display
+// Copyright (c) 2014, Szymon Jakubczak (MIT License)
+
 var http = require('http')
   , express = require('express')
   , getRawBody = require('raw-body');

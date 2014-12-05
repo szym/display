@@ -1,8 +1,9 @@
 'use strict';
 
-// Copyright 2014, Szymon Jakubczak
+// https://github.com/szym/display
+// Copyright (c) 2014, Szymon Jakubczak (MIT License)
 // Based on https://github.com/chjj/tty.js by Christopher Jeffrey
-//
+
 (function() {
 
 ///////////////////
