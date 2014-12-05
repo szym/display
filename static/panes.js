@@ -256,6 +256,7 @@ Pane.prototype = {
       el.style.boxSizing = '';
       grip.style.display = '';
       self.save();
+      if (self.onresize) self.onresize();
     };
 
     window.scrollTo(0, 0);
@@ -267,6 +268,7 @@ Pane.prototype = {
     el.style.boxSizing = 'border-box';
     grip.style.display = 'none';
     self.save();
+    if (self.onresize) self.onresize();
   },
 };
 
