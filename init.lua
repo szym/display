@@ -94,7 +94,7 @@ function M.images(images, opts)
 
   local maxsize = {1, 0, 0}
   for i, img in ipairs(images) do
-    normalize(img, opts)
+    img = normalize(img, opts)
     if img:dim() == 2 then
       img = torch.expand(img:view(1, img:size(1), img:size(2)), maxsize[1], img:size(1), img:size(2))
       images[i] = img
