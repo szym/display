@@ -25,6 +25,9 @@ html {
   position: absolute;
   top: 20px;
   left: 20px;
+  min-width: 200px;
+  min-height: 100px;
+  height: 1px;  // Need explicit height to enable children height 100% to work.
   z-index: 1000;
   box-shadow: rgba(0, 0, 0, 0.3) 2px 2px 20px;
   -webkit-box-shadow: rgba(0, 0, 0, 0.3) 2px 2px 20px;
@@ -48,15 +51,15 @@ html {
   z-index: 10;
 }
 
-.tab {
+.button {
   font-size: 13px;
   line-height: 14px;
-  margin-left: 8px;
+  margin: 0 4px;
   float: left;
   cursor: pointer;
 }
 
-.tab:hover {
+.button:hover {
   font-weight: bold;
 }
 

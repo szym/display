@@ -54,6 +54,48 @@ function getPane(id, ctor) {
   return pane;
 }
 
+function findPlacement() {
+  var rects = [];
+  for (var p in panes) {
+    if (!panes.hasOwnProperty(p)) continue;
+    p = panes[p];
+    if (p.minimize) p.minimize();
+    var el = p.element;
+    var rect = [ el.offsetLeft, el.offsetTop,
+                 el.offsetLeft + el.offsetWidth, el.offsetTop + el.offsetHeight ];
+    rects.push(rect);
+  }
+
+  if (rects.length == 0) return {};
+
+  function overlap(rect) {
+    var total = 0;
+    for (var i = 0; i < rects.length; ++i) {
+      var other = rects[i];
+      total += Math.max(0, Math.min(other[2] - rect[0], rect[2] - other[0])) *
+               Math.max(0, Math.min(other[3] - rect[1], rect[3] - other[1]));
+    }
+    return total;
+  }
+
+  // Try random location a few times; pick the one with smallest overlap.
+  var MAX_TRIES = 4;
+  var width = 400, height = 300;  // assumed width/height
+  var best = { overlap: Infinity };
+  for (var i = 0; i < MAX_TRIES; ++i) {
+    var x = Math.random() * (root.clientWidth - width), y = Math.random() * (root.clientHeight - height);
+    var candidate = [ x, y, x + width, y + height ];
+    var over = overlap(candidate);
+    if (over < best.overlap || (over <= best.overlap && (x < best.rect[0] || y < best.rect[1])))
+        best = { overlap: over, rect: candidate };
+  }
+
+  return {
+    left: best.rect[0] + 'px',
+    top: best.rect[1] + 'px',
+  };
+}
+
 function Pane(id) {
   var self = this;
 
@@ -69,7 +111,7 @@ function Pane(id) {
   var button = document.createElement('div');
   button.innerHTML = 'x';
   button.title = 'close';
-  button.className = 'tab';
+  button.className = 'button';
 
   var title = document.createElement('div');
   title.className = 'title';
@@ -90,8 +132,6 @@ function Pane(id) {
   bar.appendChild(button);
   bar.appendChild(title);
   body.appendChild(el);
-
-  panes[id] = this;
 
   on(button, 'click', function(ev) {
     self.destroy();
@@ -117,17 +157,17 @@ function Pane(id) {
 
   this.focus();
 
-  var position = JSON.parse(localStorage.getItem(id) || 'false');
-  if (position) {
-    if (position.maximized) {
-      this.maximize();
-    } else {
-      el.style.left = position.left;
-      el.style.top = position.top;
-      el.style.width = position.width;
-      el.style.height = position.height;
-    }
+  var position = JSON.parse(localStorage.getItem(id) || 'false') || findPlacement();
+  if (position.maximized) {
+    this.maximize();
+  } else {
+    el.style.left = position.left;
+    el.style.top = position.top;
+    el.style.width = position.width;
+    el.style.height = position.height;
   }
+
+  panes[id] = this;
 }
 
 Pane.prototype = {
@@ -387,16 +427,37 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
 });
 
 
+function getTickResolution(graph) {
+  var range = graph.yAxisRange(0);
+  var area = graph.getArea();
+  var maxTicks = area.h / graph.getOptionForAxis('pixelsPerLabel', 'y');
+  var tickSize = (range[1] - range[0]) / maxTicks;
+  return Math.floor(Math.log10(tickSize));
+}
+
+
 function PlotPane(id) {
   Pane.call(this, id);
 
-  // Need default size.
-  this.element.style.width = '400px';
-  this.element.style.height = '300px';
-
+  this.element.style.minWidth = '300px';
+  this.element.style.minHeight = '200px';
   this.content.className += ' content-plot';
 
-  this.graph = new Dygraph(this.content);
+  // Use undefined initial data to avoid anything being drawn until setContent.
+  var graph = this.graph = new Dygraph(this.content, undefined, {
+    axes: {
+      y: {
+        valueFormatter: function(y) {
+          var resolution = getTickResolution(graph);
+          return y.toFixed(Math.max(0, -resolution + 1));
+        },
+        axisLabelFormatter: function(y) {
+          var resolution = getTickResolution(graph);
+          return y.toFixed(Math.max(0, -resolution));
+        },
+      },
+    },
+  });
 }
 
 PlotPane.prototype = extend(Object.create(Pane.prototype), {
