@@ -97,8 +97,8 @@ function M.images(images, opts)
     img = normalize(img, opts)
     if img:dim() == 2 then
       img = torch.expand(img:view(1, img:size(1), img:size(2)), maxsize[1], img:size(1), img:size(2))
-      images[i] = img
     end
+    images[i] = img
     maxsize[1] = math.max(maxsize[1], img:size(1))
     maxsize[2] = math.max(maxsize[2], img:size(2))
     maxsize[3] = math.max(maxsize[3], img:size(3))
