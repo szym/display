@@ -81,7 +81,7 @@ end
 function M.images(images, opts)
   opts = opts or {}
   local labels = opts.labels or {}
-  local nperrow = opts.nperrow or math.floor(math.sqrt(#images))
+  local nperrow = opts.nperrow or math.ceil(math.sqrt(#images))
 
   local maxsize = {1, 0, 0}
   for i, img in ipairs(images) do
