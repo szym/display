@@ -105,15 +105,16 @@ function M.images(images, opts)
   local col = 0
   for i, img in ipairs(images) do
     canvas:narrow(2, maxsize[2] * row + 1, img:size(2)):narrow(3, maxsize[3] * col + 1, img:size(3)):copy(img)
+    if labels[i] then
+       table.insert(annotations, { col / nperrow, row / numrows, labels[i] })
+    end
     col = col + 1
     if col == nperrow then
       col = 0
       row = row + 1
     end
-    if labels[i] then
-       table.insert(annotations, { col / nperrow, row / numrows, labels[i] })
-    end
   end
+  opts._annotations = annotations;
 
   return M.image(canvas, opts)
 end
