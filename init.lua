@@ -65,15 +65,6 @@ function M.image(img, opts)
 
   img = normalize(img, opts)
 
-  local width
-  if img:dim() == 2 then
-    width = img:size(2)
-  elseif img:dim() == 3 then
-    width = img:size(3)
-  else
-    error('image must have two or three dimensions')
-  end
-
   -- I wish we could write to memory instead of on-disk file.
   local filename = os.tmpname() .. '.png'
   image.save(filename, img)
@@ -82,14 +73,14 @@ function M.image(img, opts)
   local imgdata = 'data:image/png;base64,' .. mime.b64(file:read('*all'))
   file:close()
 
-  send({ command='image', id=win, src=imgdata, width=width, title=opts.title })
+  send({ command='image', id=win, src=imgdata, annotations=opts._annotations, width=opts.width, title=opts.title })
   return win
 end
 
 
 function M.images(images, opts)
   opts = opts or {}
-  -- TODO: support legend/annotations
+  local labels = opts.labels or {}
   local nperrow = opts.nperrow or math.floor(math.sqrt(#images))
 
   local maxsize = {1, 0, 0}
@@ -105,6 +96,7 @@ function M.images(images, opts)
   end
 
   -- merge all images onto one big canvas
+  local annotations = {}
   local numrows = math.ceil(#images / nperrow)
   local canvas = torch.FloatTensor(maxsize[1], maxsize[2] * numrows, maxsize[3] * nperrow):fill(0.5)
   local row = 0
@@ -115,6 +107,9 @@ function M.images(images, opts)
     if col == nperrow then
       col = 0
       row = row + 1
+    end
+    if labels[i] then
+       table.insert(annotations, { col / nperrow, row / numrows, labels[i] })
     end
   end
 

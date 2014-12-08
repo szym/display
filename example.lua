@@ -9,7 +9,7 @@ i2 = image.fabio()
 
 disp.image(i1, { title='lena' })
 
-disp.images({i2, i2, i2, i2}, { width=200, title='super fabio' })
+disp.images({i2, i2, i2, i2}, { width=200, title='super fabio', labels={'a', 'b', 'c', 'd'}})
 
 data = {}
 for i=1,15 do
