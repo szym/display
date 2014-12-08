@@ -462,6 +462,7 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
       this.content.removeAttribute('width');
     }
     this.annotations.innerHTML = '';
+    annotations = annotations || [];
     for (var i = 0; i < annotations.length; ++i) {
       var a = annotations[i];  // [x, y, text]
       var ae = document.createElement('div');

@@ -81,11 +81,13 @@ end
 function M.images(images, opts)
   opts = opts or {}
   local labels = opts.labels or {}
-  local nperrow = opts.nperrow or math.floor(math.sqrt(#images))
+  local nperrow = opts.nperrow or math.ceil(math.sqrt(#images))
 
   local maxsize = {1, 0, 0}
   for i, img in ipairs(images) do
-    img = normalize(img, opts)
+    if opts.normalize then
+      img = normalize(img, opts)
+    end
     if img:dim() == 2 then
       img = torch.expand(img:view(1, img:size(1), img:size(2)), maxsize[1], img:size(1), img:size(2))
     end
@@ -103,15 +105,16 @@ function M.images(images, opts)
   local col = 0
   for i, img in ipairs(images) do
     canvas:narrow(2, maxsize[2] * row + 1, img:size(2)):narrow(3, maxsize[3] * col + 1, img:size(3)):copy(img)
+    if labels[i] then
+       table.insert(annotations, { col / nperrow, row / numrows, labels[i] })
+    end
     col = col + 1
     if col == nperrow then
       col = 0
       row = row + 1
     end
-    if labels[i] then
-       table.insert(annotations, { col / nperrow, row / numrows, labels[i] })
-    end
   end
+  opts._annotations = annotations;
 
   return M.image(canvas, opts)
 end

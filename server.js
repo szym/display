@@ -31,10 +31,10 @@ function createServer() {
     });
   });
 
-  app.post('/events', function(req, res) {
+  app.post('/events', function(req, res, next) {
     getRawBody(req, {
       length: req.headers['content-length'],
-      limit: '2mb',
+      limit: '4mb',
     }, function(err, body) {
       if (err) return next(err);
       app.emit('update', body);
