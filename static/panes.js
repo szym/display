@@ -340,13 +340,13 @@ function ImagePane(id) {
     return cancel(ev);
   });
 
-  var width, height;
+  this.width = 0;
+  this.height = 0;
 
-  // FIXME: not called if src is a data URL
-  on(content, 'load', function(ev) {
-    if ((content.naturalWidth != width) || (content.naturalHeight != height)) {
-      width = content.naturalWidth;
-      height = content.naturalHeight;
+  on(image, 'load', function(ev) {
+    if ((image.width != self.width) || (image.height != self.height)) {
+      self.width = image.width;
+      self.height = image.height;
       self.reset();
     }
   });
@@ -354,10 +354,12 @@ function ImagePane(id) {
 
 ImagePane.prototype = extend(Object.create(Pane.prototype), {
   moveContent: function(left, top) {
-    var el = this.element, content = this.content;
+    var el = this.element
+      , content = this.content;
+
     if (!content.style.position) {
       // Until the content is first moved, it is positioned statically, so remember current size in |el|.
-      el.style.width = Math.min(root.clientHeight - el.offsetLeft, el.offsetWidth) + 'px';
+      el.style.width = Math.min(root.clientWidth - el.offsetLeft, el.offsetWidth) + 'px';
       el.style.height = Math.min(root.clientHeight - el.offsetTop, el.offsetHeight) + 'px';
       content.style.position = 'absolute';
     }
@@ -366,7 +368,8 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
   },
 
   zoom: function(ev) {
-    var el = this.element, content = this.content;
+    var el = this.element
+      , content = this.content;
 
     var delta = (ev.deltaMode === ev.DOM_DELTA_PIXEL) ? ev.deltaY : ev.deltaY * 40;
     var scale = Math.exp(delta / 800.);
@@ -374,17 +377,19 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
     // Don't shrink below 100px.
     if (content.offsetWidth * scale < 100) scale = 100 / content.offsetWidth;
 
-    // Note, style is applied immediately, so changing style.width might change offsetHeight.
-    var height = content.offsetHeight;
-    content.style.width = content.offsetWidth * scale + 'px';
-    content.style.height = height * scale + 'px';
+    this.width *= scale;
+    this.height *= scale;
+
+    content.style.width = this.width + 'px';
+    content.style.height = this.height + 'px';
 
     this.moveContent(content.offsetLeft + (1 - scale) * ev.layerX,
                      content.offsetTop + (1 - scale) * ev.layerY);
   },
 
   panContent: function(ev) {
-    var self = this, content = this.content;
+    var self = this
+      , content = this.content;
 
     var drag = {
       left: content.offsetLeft  - ev.pageX,
@@ -420,7 +425,11 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
 
   setContent: function(src, width, annotations) {
     this.content.src = src;
-    this.content.width = width;
+    if (width) {
+      this.content.width = width;
+    } else {
+      this.content.removeAttribute('width');
+    }
     // TODO: support annotations
     // this.reset();
   },
@@ -441,6 +450,7 @@ function PlotPane(id) {
 
   this.element.style.minWidth = '300px';
   this.element.style.minHeight = '200px';
+  this.element.style.height = '200px';  // min-height is not enough for children height 100% to work
   this.content.className += ' content-plot';
 
   // Use undefined initial data to avoid anything being drawn until setContent.

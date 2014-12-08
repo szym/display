@@ -27,7 +27,6 @@ html {
   left: 20px;
   min-width: 200px;
   min-height: 100px;
-  height: 1px;  // Need explicit height to enable children height 100% to work.
   z-index: 1000;
   box-shadow: rgba(0, 0, 0, 0.3) 2px 2px 20px;
   -webkit-box-shadow: rgba(0, 0, 0, 0.3) 2px 2px 20px;
