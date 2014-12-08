@@ -108,10 +108,13 @@ function Pane(id) {
   var bar = document.createElement('div');
   bar.className = 'bar';
 
-  var button = document.createElement('div');
-  button.innerHTML = 'x';
-  button.title = 'close';
-  button.className = 'button';
+  var closeButton = document.createElement('button');
+  closeButton.innerHTML = 'x';
+  closeButton.title = 'close';
+
+  var cloneButton = document.createElement('button');
+  cloneButton.innerHTML = 'o';
+  cloneButton.title = 'disconnect';
 
   var title = document.createElement('div');
   title.className = 'title';
@@ -129,12 +132,22 @@ function Pane(id) {
   el.appendChild(grip);
   el.appendChild(bar);
   el.appendChild(content);
-  bar.appendChild(button);
+  bar.appendChild(closeButton);
+  bar.appendChild(cloneButton);
   bar.appendChild(title);
   body.appendChild(el);
 
-  on(button, 'click', function(ev) {
+  on(closeButton, 'click', function(ev) {
     self.destroy();
+    return cancel(ev);
+  });
+
+  on(cloneButton, 'click', function(ev) {
+    bar.removeChild(cloneButton);
+    self.id = id + Math.random();
+    self.title.innerHTML += ' (offline)';
+    delete panes[id];
+    panes[self.id] = self;
     return cancel(ev);
   });
 
@@ -387,8 +400,10 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
       content.style.position = 'absolute';
     }
     // TODO: use CSS transforms instead of left/top/width/height
-    content.style.left = Math.min(0, Math.max(el.offsetWidth - content.offsetWidth, left)) + 'px';
-    content.style.top = Math.min(0, Math.max(el.offsetHeight - content.offsetHeight, top)) + 'px';
+    content.style.left = Math.min(el.offsetWidth - 20,
+                           Math.max(20 - content.offsetWidth, left)) + 'px';
+    content.style.top = Math.min(el.offsetHeight - 18 - 20,
+                          Math.max(20 - content.offsetHeight, top)) + 'px';
     this.resizeAnnotations();
   },
 

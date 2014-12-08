@@ -15,6 +15,13 @@ html {
   background: #333;
 }
 
+body:empty {
+  content: "no windows";
+  font-size: 40pt;
+  font-weight: bold;
+  color: #bbb;
+}
+
 .window {
   overflow: hidden;
   box-sizing: border-box;
@@ -50,7 +57,9 @@ html {
   z-index: 10;
 }
 
-.button {
+button {
+  border: none;
+  background: transparent;
   font-size: 13px;
   line-height: 14px;
   margin: 0 4px;
@@ -58,7 +67,7 @@ html {
   cursor: pointer;
 }
 
-.button:hover {
+button:hover {
   font-weight: bold;
 }
 
