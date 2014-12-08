@@ -321,8 +321,14 @@ function ImagePane(id) {
   image.className = 'content-image';
   content.appendChild(image);
 
-  // TODO: add annotations. <div><image /><annotations /></div>
+  var annotations = document.createElement('div');
+  annotations.className = 'annotations';
+  content.appendChild(annotations);
+
   this.content = image;
+  this.annotations = annotations;
+  this.width = 0;
+  this.height = 0;
 
   on(content, 'wheel', function(ev) {
     self.zoom(ev);
@@ -340,9 +346,6 @@ function ImagePane(id) {
     return cancel(ev);
   });
 
-  this.width = 0;
-  this.height = 0;
-
   on(image, 'load', function(ev) {
     if ((image.width != self.width) || (image.height != self.height)) {
       self.width = image.width;
@@ -353,6 +356,26 @@ function ImagePane(id) {
 }
 
 ImagePane.prototype = extend(Object.create(Pane.prototype), {
+  resizeAnnotations: function() {
+    // TODO: can we use CSS transforms instead?
+    this.annotations.style.left = this.content.offsetLeft + 'px';
+    this.annotations.style.top = this.content.offsetTop + 'px';
+    this.annotations.style.width = this.content.offsetWidth + 'px';
+    this.annotations.style.height = this.content.offsetHeight + 'px'
+  },
+
+  reset: function() {
+    var c = this.content;
+
+    c.style.left = '';
+    c.style.top = '';
+    c.style.width ='';
+    c.style.height = '';
+    this.resizeAnnotations();
+    this.width = this.content.width;
+    this.height = this.content.height;
+  },
+
   moveContent: function(left, top) {
     var el = this.element
       , content = this.content;
@@ -363,8 +386,10 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
       el.style.height = Math.min(root.clientHeight - el.offsetTop, el.offsetHeight) + 'px';
       content.style.position = 'absolute';
     }
+    // TODO: use CSS transforms instead of left/top/width/height
     content.style.left = Math.min(0, Math.max(el.offsetWidth - content.offsetWidth, left)) + 'px';
     content.style.top = Math.min(0, Math.max(el.offsetHeight - content.offsetHeight, top)) + 'px';
+    this.resizeAnnotations();
   },
 
   zoom: function(ev) {
@@ -414,15 +439,6 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
     on(document, 'mouseup', up);
   },
 
-  reset: function() {
-    var c = this.content;
-
-    c.style.left = '';
-    c.style.top = '';
-    c.style.width ='';
-    c.style.height = '';
-  },
-
   setContent: function(src, width, annotations) {
     this.content.src = src;
     if (width) {
@@ -430,8 +446,16 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
     } else {
       this.content.removeAttribute('width');
     }
-    // TODO: support annotations
-    // this.reset();
+    this.annotations.innerHTML = '';
+    for (var i = 0; i < annotations.length; ++i) {
+      var a = annotations[i];  // [x, y, text]
+      var ae = document.createElement('div');
+      ae.className = 'annotation';
+      ae.style.left = a[0] < 1 ? (a[0] * 100 + '%') : (a[0] + 'px');
+      ae.style.top = a[1] < 1 ? (a[1] * 100 + '%') : (a[1] + 'px');
+      ae.innerHTML = a[2];
+      this.annotations.appendChild(ae);
+    }
   },
 });
 
