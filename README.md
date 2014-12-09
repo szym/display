@@ -1,14 +1,19 @@
 # display: a browser-based graphics server
 
-Original forked from [gfx.js](https://github.com/clementfarabet/gfx.js/).
+Originally forked from [gfx.js](https://github.com/clementfarabet/gfx.js/).
 
-The original goal was to remain compatible with the torch/python API of gfx.js,
+The initial goal was to remain compatible with the torch/python API of `gfx.js`,
 but remove the term.js/tty.js/pty.js stuff which is served just fine by ssh.
 
-I also wanted charts to resize properly when their windows are resized.
+Compared to `gfx.js`:
 
-A secondary goal was to simplify session management and store window positions
-so that after reloading the window everything remains where it was left.
+  - no terminal windows (no term.js)
+  - dygraphs instead of nvd3 (have built in zoom and are perfect for time-series plots)
+  - plots resize when windows are resized
+  - images support zoom and pan
+  - image lists are rendered as one image to speed up loading
+  - windows remember their positions
+  - implementation not relying on the filesystem, supports multiple simultaneous clients (sources)
 
 ## Technical overview
 
@@ -20,6 +25,22 @@ The Lua client sends JSON commands directly to the server. The browser script
 interprets these commands, e.g.
 
     { command: 'image', src: 'data:image/png;base64,....', title: 'lena' }
+
+### Supported commands
+
+Common parameters:
+  - `id`: identifier of the window to be reused (pick a random one if you want a new window)
+  - `title`: title for the window title bar
+
+`image` creates a zoomable <img> element
+  - `src`: URL for the <img> element
+  - `width`: initial width in pixels
+  - `labels`: array of 3-element arrays `[ x, y, text ]`, where `x`, `y` are the coordinates
+    `(0, 0)` is top-left, `(1, 1)` is bottom-right; `text` is the label content
+
+`plot` creates a Dygraph, all [Dygraph options](http://dygraphs.com/options.html) are supported
+  - `file`: see [Dygraph data formats](http://dygraphs.com/data.html) for supported formats
+  - `labels`: list of strings, first element is the X label
 
 ## Installation and usage
 

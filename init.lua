@@ -73,7 +73,7 @@ function M.image(img, opts)
   local imgdata = 'data:image/png;base64,' .. mime.b64(file:read('*all'))
   file:close()
 
-  send({ command='image', id=win, src=imgdata, annotations=opts._annotations, width=opts.width, title=opts.title })
+  send({ command='image', id=win, src=imgdata, labels=opts._labels, width=opts.width, title=opts.title })
   return win
 end
 
@@ -98,7 +98,7 @@ function M.images(images, opts)
   end
 
   -- merge all images onto one big canvas
-  local annotations = {}
+  local _labels = {}
   local numrows = math.ceil(#images / nperrow)
   local canvas = torch.FloatTensor(maxsize[1], maxsize[2] * numrows, maxsize[3] * nperrow):fill(0.5)
   local row = 0
@@ -106,7 +106,7 @@ function M.images(images, opts)
   for i, img in ipairs(images) do
     canvas:narrow(2, maxsize[2] * row + 1, img:size(2)):narrow(3, maxsize[3] * col + 1, img:size(3)):copy(img)
     if labels[i] then
-       table.insert(annotations, { col / nperrow, row / numrows, labels[i] })
+       table.insert(_labels, { col / nperrow, row / numrows, labels[i] })
     end
     col = col + 1
     if col == nperrow then
@@ -114,7 +114,7 @@ function M.images(images, opts)
       row = row + 1
     end
   end
-  opts._annotations = annotations;
+  opts._labels = _labels;
 
   return M.image(canvas, opts)
 end
