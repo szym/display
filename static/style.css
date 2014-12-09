@@ -15,13 +15,6 @@ html {
   background: #333;
 }
 
-body:empty {
-  content: "no windows";
-  font-size: 40pt;
-  font-weight: bold;
-  color: #bbb;
-}
-
 .window {
   overflow: hidden;
   box-sizing: border-box;
