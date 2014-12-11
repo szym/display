@@ -4,10 +4,11 @@ set -e
 
 DEST=${1:-"$HOME/.display"}
 
-mkdir -p ${DEST}
-cp -r README.md package.json run.js server.js static ${DEST}/
+FILES="README.md package.json run.js server.js static"
 
-echo '==> Installing package'
+mkdir -p ${DEST}
+cp -a ${FILES} ${DEST}/
+
 cd ${DEST}
 npm install
 
