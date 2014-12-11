@@ -1,5 +1,5 @@
 --
--- A torch client to litegfx.M backend
+-- A torch client for `display` graphics server
 -- Based heavily on https://github.com/clementfarabet/gfx.js/blob/master/clients/torch/js.lua
 --
 
