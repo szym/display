@@ -123,7 +123,6 @@ function Pane(id) {
   content.className = 'content';
 
   this.id = id;
-  this.zoomable = false;
   this.element = el;
   this.grip = grip;
   this.title = title;
@@ -342,6 +341,7 @@ function ImagePane(id) {
   this.labels = labels;
   this.width = 0;
   this.height = 0;
+  this.scale = 1;
 
   on(content, 'wheel', function(ev) {
     self.zoom(ev);
@@ -355,14 +355,18 @@ function ImagePane(id) {
   });
 
   on(content, 'dblclick', function(ev) {
-    self.reset();
+    if (self.content.style.width) {
+      self.reset();
+    } else {
+      self.fullzoom();
+    }
     return cancel(ev);
   });
 
   on(image, 'load', function(ev) {
-    if ((image.width != self.width) || (image.height != self.height)) {
-      self.width = image.width;
-      self.height = image.height;
+    if ((image.naturalWidth != self.width) || (image.naturalHeight != self.height)) {
+      self.width = image.naturalWidth;
+      self.height = image.naturalHeight;
       self.reset();
     }
   });
@@ -370,7 +374,7 @@ function ImagePane(id) {
 
 ImagePane.prototype = extend(Object.create(Pane.prototype), {
   resizeLabels: function() {
-    // TODO: can we use CSS transforms instead?
+    // Note, we want to keep natural font, so don't use transforms.
     this.labels.style.left = this.content.offsetLeft + 'px';
     this.labels.style.top = this.content.offsetTop + 'px';
     this.labels.style.width = this.content.offsetWidth + 'px';
@@ -385,8 +389,19 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
     c.style.width ='';
     c.style.height = '';
     this.resizeLabels();
-    this.width = this.content.width;
-    this.height = this.content.height;
+    this.scale = 1;
+  },
+
+  fullzoom: function() {
+    var el = this.element
+      , c = this.content;
+
+    c.style.left = '0';
+    c.style.top = '0';
+    this.scale = Math.min(el.offsetWidth / c.naturalWidth, el.offsetHeight / c.naturalHeight);
+    c.style.width = this.width * this.scale + 'px';
+    c.style.height = this.height * this.scale + 'px';
+    this.resizeLabels();
   },
 
   moveContent: function(left, top) {
@@ -417,11 +432,10 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
     // Don't shrink below 100px.
     if (content.offsetWidth * scale < 100) scale = 100 / content.offsetWidth;
 
-    this.width *= scale;
-    this.height *= scale;
+    this.scale *= scale;
 
-    content.style.width = this.width + 'px';
-    content.style.height = this.height + 'px';
+    content.style.width = this.width * this.scale + 'px';
+    content.style.height = this.height * this.scale + 'px';
 
     this.moveContent(content.offsetLeft + (1 - scale) * ev.layerX,
                      content.offsetTop + (1 - scale) * ev.layerY);
@@ -455,8 +469,17 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
   },
 
   setContent: function(src, width, labels) {
+    // Hack around unexpected behavior. Setting .src resets .style (except 'position: absolute').
+    var oldCss = this.content.style.cssText;
     this.content.src = src;
+    this.content.style.cssText = oldCss;
+    if (this.content.style.cssText != oldCss) {
+      console.log('WHAT THE FLYIN FUCK', this.content.style, oldCss);
+      this.content.style.cssText = oldCss;
+    }
     if (width) {
+      if (this.content.width != width)
+        this.reset();
       this.content.width = width;
     } else {
       this.content.removeAttribute('width');
@@ -488,9 +511,9 @@ function getTickResolution(graph) {
 function PlotPane(id) {
   Pane.call(this, id);
 
-  this.element.style.minWidth = '300px';
-  this.element.style.minHeight = '200px';
-  this.element.style.height = '200px';  // min-height is not enough for children height 100% to work
+  this.element.className += ' window-plot';
+  if (!this.element.style.height)
+     this.element.style.height = '200px';
   this.content.className += ' content-plot';
 
   // Use undefined initial data to avoid anything being drawn until setContent.

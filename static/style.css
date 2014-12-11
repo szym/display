@@ -105,6 +105,11 @@ button:hover {
   font-size: 80%;
 }
 
+.window-plot {
+  min-width: 300px;
+  min-height: 200px;
+}
+
 .content-plot {
   background: white;
 }
