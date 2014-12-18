@@ -560,16 +560,48 @@ var Commands = {
   },
 };
 
-function load() {
-  root = document.documentElement;
-  body = document.body;
 
+function connect() {
+  var status = document.getElementById('status');
   var eventSource = new EventSource('events');
+
+  on(eventSource, 'open', function(event) {
+    status.className = 'online';
+    status.innerHTML = 'online';
+  });
+
+  on(eventSource, 'error', function(event) {
+    if (eventSource.readyState == eventSource.CLOSED) {
+      status.className = 'offline';
+      status.innerHTML = 'offline';
+    }
+  });
 
   on(eventSource, 'message', function(event) {
     var cmd = JSON.parse(event.data);
     var command = Commands[cmd.command];
     if (command) command(cmd);
+  });
+
+  return eventSource;
+}
+
+
+function load() {
+  root = document.documentElement;
+  body = document.body;
+
+  var status = document.getElementById('status');
+  var eventSource = connect();
+
+  on(status, 'click', function(event) {
+    if (status.className == 'online') {
+      eventSource.close();
+      status.className = 'offline';
+      status.innerHTML = 'offline';
+    } else {
+      eventSource = connect();
+    }
   });
 
   off(document, 'DOMContentLoaded', load);

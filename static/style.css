@@ -11,7 +11,6 @@
 }
 
 html {
-  overflow: hidden;
   background: #333;
 }
 
@@ -52,16 +51,34 @@ html {
 
 button {
   border: none;
-  background: transparent;
   font-size: 13px;
   line-height: 14px;
-  margin: 0 4px;
-  float: left;
   cursor: pointer;
 }
 
 button:hover {
   font-weight: bold;
+}
+
+.bar button {
+  background: transparent;
+  margin: 0 4px;
+  float: left;
+}
+
+#status {
+  padding: 5px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#status.online {
+  background: #8f8;
+}
+
+#status.offline {
+  background: #f88;
 }
 
 .title {
@@ -78,10 +95,10 @@ button:hover {
 
 .grip {
   position: absolute;
-  bottom: -10px;
-  right: -10px;
-  width: 22px;
-  height: 22px;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
   cursor: se-resize;
   background: transparent;
   z-index: 10;

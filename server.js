@@ -17,6 +17,7 @@ function createServer() {
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
     });
+    res.write('\n\n');
 
     function forwardEvent(data) {
       res.write('data: ');
