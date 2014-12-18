@@ -8,12 +8,12 @@ but remove the term.js/tty.js/pty.js stuff which is served just fine by ssh.
 Compared to `gfx.js`:
 
   - no terminal windows (no term.js)
-  - dygraphs instead of nvd3 (have built in zoom and are perfect for time-series plots)
+  - [dygraphs](http://dygraphs.com/) instead of nvd3 (have built in zoom and are perfect for time-series plots)
   - plots resize when windows are resized
   - images support zoom and pan
   - image lists are rendered as one image to speed up loading
   - windows remember their positions
-  - implementation not relying on the filesystem, supports multiple simultaneous clients (sources)
+  - implementation not relying on the filesystem, supports remote clients (sources)
 
 ## Technical overview
 
@@ -32,8 +32,8 @@ Common parameters:
   - `id`: identifier of the window to be reused (pick a random one if you want a new window)
   - `title`: title for the window title bar
 
-`image` creates a zoomable <img> element
-  - `src`: URL for the <img> element
+`image` creates a zoomable `<img>` element
+  - `src`: URL for the `<img>` element
   - `width`: initial width in pixels
   - `labels`: array of 3-element arrays `[ x, y, text ]`, where `x`, `y` are the coordinates
     `(0, 0)` is top-left, `(1, 1)` is bottom-right; `text` is the label content
