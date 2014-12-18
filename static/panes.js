@@ -564,7 +564,6 @@ var Commands = {
   },
 };
 
-
 function connect() {
   var status = document.getElementById('status');
   var eventSource = new EventSource('events');
@@ -577,7 +576,7 @@ function connect() {
   on(eventSource, 'error', function(event) {
     if (eventSource.readyState == eventSource.CLOSED) {
       status.className = 'offline';
-      status.innerHTML = 'offline';
+      status.innerHTML = 'error';
     }
   });
 
@@ -589,7 +588,6 @@ function connect() {
 
   return eventSource;
 }
-
 
 function load() {
   root = document.documentElement;
@@ -613,6 +611,4 @@ function load() {
 
 on(document, 'DOMContentLoaded', load);
 
-}).call(function() {
-  return this || (typeof window !== 'undefined' ? window : global);
-}());
+}).call(window);
