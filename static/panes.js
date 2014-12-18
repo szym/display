@@ -124,6 +124,7 @@ function Pane(id) {
 
   this.id = id;
   this.element = el;
+  this.bar = bar;
   this.grip = grip;
   this.title = title;
   this.content = content;
@@ -417,7 +418,7 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
     // TODO: use CSS transforms instead of left/top/width/height
     content.style.left = Math.min(el.offsetWidth - 20,
                            Math.max(20 - content.offsetWidth, left)) + 'px';
-    content.style.top = Math.min(el.offsetHeight - 18 - 20,
+    content.style.top = Math.min(el.offsetHeight - this.bar.offsetHeight - 20,
                           Math.max(20 - content.offsetHeight, top)) + 'px';
     this.resizeLabels();
   },
@@ -437,8 +438,11 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
     content.style.width = this.width * this.scale + 'px';
     content.style.height = this.height * this.scale + 'px';
 
-    this.moveContent(content.offsetLeft + (1 - scale) * ev.layerX,
-                     content.offsetTop + (1 - scale) * ev.layerY);
+    var layerX = ev.clientX - content.offsetLeft - el.offsetLeft;
+    var layerY = ev.clientY - content.offsetTop - el.offsetTop - this.bar.offsetHeight;
+
+    this.moveContent(content.offsetLeft + (1 - scale) * layerX,
+                     content.offsetTop + (1 - scale) * layerY);
   },
 
   panContent: function(ev) {
