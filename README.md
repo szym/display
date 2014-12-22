@@ -59,3 +59,6 @@ See `example.lua` for sample usage.
     disp.plot(torch.cat(torch.linspace(0, 10, 10), torch.randn(10), 2))
 
 ![](https://raw.github.com/szym/display/master/example.png)
+
+Note, there is no authentication and by default the server listens on external IP, so **don't use "as is"
+for sensitive data**.
