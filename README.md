@@ -52,6 +52,9 @@ Launch the server:
 
     ~/.display/run.js &
 
+Note, there is no authentication and by default the server listens on external IP (port 8000),
+so **don't use "as is" for sensitive data**.
+
 See `example.lua` for sample usage.
 
     disp = require 'display'
@@ -59,6 +62,3 @@ See `example.lua` for sample usage.
     disp.plot(torch.cat(torch.linspace(0, 10, 10), torch.randn(10), 2))
 
 ![](https://raw.github.com/szym/display/master/example.png)
-
-Note, there is no authentication and by default the server listens on external IP, so **don't use "as is"
-for sensitive data**.
