@@ -11,7 +11,9 @@ function createServer() {
   var app = express();
 
   app.get('/events', function(req, res) {
-    req.socket.setTimeout(Infinity);
+    // Max timeout that fits in signed int32.
+    var TIMEOUT_MAX = 0x7FFFFFFF; // 2^31-1
+    req.socket.setTimeout(TIMEOUT_MAX);
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
