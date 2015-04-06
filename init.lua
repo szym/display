@@ -139,9 +139,7 @@ function M.plot(data, opts)
       table.insert(dataset, row)
     end
   else
-    for i, v in ipairs(data) do
-      table.insert(dataset, v)
-    end
+    dataset = data
   end
 
   -- clone opts into options
