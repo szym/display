@@ -34,12 +34,10 @@ def encode_png(buf, width, height):
   import zlib, struct, itertools
   assert (width * height * 3 == len(buf))
   bpp = 3
-  # reverse the vertical line order and add null bytes at the start
-  width_bytes = width * bpp
-  # TODO: make a generetar
-  #raw_data = b''.join(b'\x00' + buf[span:span + width_byte_4]
-  #    for span in range((height - 1) * width * 4, -1, - width_byte_4))
+
   def raw_data():
+    # reverse the vertical line order and add null bytes at the start
+    width_bytes = width * bpp
     for span in range((height - 1) * width * bpp, -1, - width_bytes):
       yield b'\x00'
       yield buf[span:span + width_bytes]
