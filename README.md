@@ -44,9 +44,13 @@ Common parameters:
 
 ## Installation and usage
 
-Install via:
+Install for Torch via:
 
     luarocks install https://raw.githubusercontent.com/szym/display/master/display-scm-0.rockspec
+
+Install for Python (`numpy` required) via:
+
+    python setup.py install [--user]
 
 Launch the server:
 
@@ -55,7 +59,7 @@ Launch the server:
 Note, there is no authentication and by default the server listens on external IP (port 8000),
 so **don't use "as is" for sensitive data**.
 
-See `example.lua` for sample usage.
+See `example.lua` or `example.py` for sample usage.
 
     disp = require 'display'
     disp.image(image.lena())
