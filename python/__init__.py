@@ -1,11 +1,11 @@
 
 import base64
 import json
+import numpy
 import urllib.request
 import uuid
 
-import numpy
-
+from . import png
 
 __all__ = ['URL', 'image', 'images', 'plot']
 
@@ -27,38 +27,6 @@ def send(**command):
   except:
     raise
     return False
-
-
-def encode_png(buf, width, height):
-  """ buf: must be bytes or a bytearray in py3, a regular string in py2. formatted RGBRGB... """
-  import zlib, struct, itertools
-  assert (width * height * 3 == len(buf))
-  bpp = 3
-
-  def raw_data():
-    # reverse the vertical line order and add null bytes at the start
-    width_bytes = width * bpp
-    for span in range((height - 1) * width * bpp, -1, - width_bytes):
-      yield b'\x00'
-      yield buf[span:span + width_bytes]
-
-  def png_pack(png_tag, data):
-    chunk_head = png_tag + data
-    return b''.join([
-        struct.pack("!I", len(data)),
-        chunk_head,
-        struct.pack("!I", 0xFFFFFFFF & zlib.crc32(chunk_head))
-      ])
-
-  COLOR_TYPE_RGB = 2
-  COLOR_TYPE_RGBA = 6
-  bit_depth = 8
-  return b''.join([
-      b'\x89PNG\r\n\x1a\n',
-      png_pack(b'IHDR', struct.pack("!2I5B", width, height, bit_depth, COLOR_TYPE_RGB, 0, 0, 0)),
-      png_pack(b'IDAT', zlib.compress(b''.join(raw_data()), 9)),
-      png_pack(b'IEND', b'')
-    ])
 
 
 def normalize(img, opts):
@@ -90,7 +58,7 @@ def image(img, **opts):
   # TODO: if img is a 3d tensor, then unstack it into a list of images
 
   img = to_rgb(normalize(img, opts))
-  pngbytes = encode_png(img.tostring(), img.shape[1], img.shape[0])
+  pngbytes = png.encode(img.tostring(), img.shape[1], img.shape[0])
   imgdata = 'data:image/png;base64,' + base64.b64encode(pngbytes).decode('ascii')
 
   send(command='image', id=win, src=imgdata,
