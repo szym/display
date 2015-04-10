@@ -46,6 +46,7 @@ function extend(dst, src) {
 var panes = {};
 
 function getPane(id, ctor) {
+  if (typeof id === 'undefined') id = Math.random().toString(36).substring(7);
   var pane = panes[id];
   if (!(pane instanceof ctor)) {
     if (pane) pane.destroy(true);
