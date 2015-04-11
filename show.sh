@@ -13,7 +13,7 @@ WIN='null'
 
 function usage() {
   cat >&2 <<EOF
-Usage: [-t title] [-w id] -i imagefile
+Usage: [-t title] [-w id] imagefile
 EOF
 }
 
@@ -23,23 +23,15 @@ if [ "$#" -eq 0 ]; then
 fi
 
 
-while getopts "t:w:i:h" opt; do
+while getopts "t:w:h" opt; do
   case $opt in
-    t)
-      TITLE=$OPTARG
-      ;;
-    w)
-      WIN="\"win\": \"$OPTARG\","
-      ;;
-    i)
-      IMGFILE=$OPTARG
-      ;;
-    h)
-      usage
-      exit 2
-      ;;
+    t) TITLE=$OPTARG;;
+    w) WIN="\"win\": \"$OPTARG\",";;
+    h) usage; exit 2;;
   esac
 done
+
+IMGFILE=${@:$OPTIND:1}
 
 
 EXT=${IMGFILE##*.}
