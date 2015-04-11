@@ -159,8 +159,9 @@ function Pane(id) {
   });
 
   on(el, 'mousedown', function(ev) {
+    if (ev.target.nodeName === "BUTTON") return true;
     self.focus();
-    if (ev.target !== el && ev.target !== bar && ev.target !== title) return;
+    if (ev.target !== el && ev.target !== bar && ev.target !== title) return true;
     self.drag(ev);
     return cancel(ev);
   });
