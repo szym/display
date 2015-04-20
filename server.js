@@ -37,7 +37,7 @@ function createServer() {
   app.post('/events', function(req, res, next) {
     getRawBody(req, {
       length: req.headers['content-length'],
-      limit: '4mb',
+      limit: '20mb',
     }, function(err, body) {
       if (err) return next(err);
       app.emit('update', body);
