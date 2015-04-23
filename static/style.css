@@ -122,6 +122,10 @@ button:hover {
   font-size: 80%;
 }
 
+.content-image {
+  image-rendering: pixelated;
+}
+
 .window-plot {
   min-width: 300px;
   min-height: 200px;
