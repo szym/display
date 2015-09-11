@@ -160,5 +160,13 @@ function M.plot(data, opts)
   return win
 end
 
+function M.text(txt, opts)
+  opts = opts or {}
+  local win = opts.win or uid()
+
+  send({ command='text', id=win, title=opts.title, text=txt })
+  return win
+end
+
 
 return M
