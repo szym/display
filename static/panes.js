@@ -549,6 +549,23 @@ PlotPane.prototype = extend(Object.create(Pane.prototype), {
   },
 });
 
+function TextPane(id) {
+  Pane.call(this, id);
+    
+  var self = this;
+  var content = this.content;
+  var txt = document.createElement('p');
+  txt.className = 'content-text';
+  content.appendChild(txt);
+  this.content = txt;
+}
+
+TextPane.prototype = extend(Object.create(Pane.prototype), {
+  setContent: function(txt) {
+    this.content.innerHTML = txt;
+  },
+});
+
 ///////////////////
 // Display "server"
 
@@ -563,6 +580,11 @@ var Commands = {
     var pane = getPane(cmd.id, PlotPane);
     if (cmd.title) pane.setTitle(cmd.title);
     pane.setContent(cmd.options);
+  },
+  text: function(cmd) {
+    var pane = getPane(cmd.id, TextPane);
+    if (cmd.title) pane.setTitle(cmd.title);
+    pane.setContent(cmd.text);
   },
 };
 
