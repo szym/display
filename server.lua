@@ -57,8 +57,8 @@ app = turbo.web.Application:new({
 })
 
 local port = tonumber(arg[1]) or 8000
-local hostname = arg[2] or 'localhost'
-app:listen(port)
+local hostname = arg[2] or '127.0.0.1'
+app:listen(port, hostname, { max_body_size=(20 * 1024 * 1024) })
 print('Listening on http://' .. hostname .. ':' .. port)
 turbo.ioloop.instance():start()
 
