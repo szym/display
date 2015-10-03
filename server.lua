@@ -8,6 +8,7 @@ local port = tonumber(arg[1]) or 8000
 local hostname = arg[2] or '127.0.0.1'
 
 local async = require('async')
+local config = require('display.config')
 
 local function getMime(ext)
    if ext == '.css' then
@@ -60,7 +61,7 @@ async.http.listen('http://' .. hostname .. ':' .. port .. '/',
 	   local ext = string.match(file, "%.%l%l%l?")
 	   local mime = getMime(ext)
 
-	   local served = io.open("static/" .. file, 'r')
+	   local served = io.open(config.static .. file, 'r')
 	   if served ~= nil then
 	      resp = served:read("*all")
 	      served:close()
