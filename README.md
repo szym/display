@@ -15,16 +15,30 @@ Compared to `gfx.js`:
   - windows remember their positions
   - implementation not relying on the filesystem, supports remote clients (sources)
 
-## Technical overview
+## Installation and usage
 
-The server is a trivial message forwarder:
+Install for Torch via:
 
-    POST /events -> EventSource('/events')
+    luarocks install https://raw.githubusercontent.com/szym/display/master/display-scm-0.rockspec
 
-The Lua client sends JSON commands directly to the server. The browser script
-interprets these commands, e.g.
+Install for Python (`numpy` required) via:
 
-    { command: 'image', src: 'data:image/png;base64,....', title: 'lena' }
+    python setup.py install [--user]
+
+Launch the server:
+
+    th -ldisplay.start [port [hostname]]
+
+Note, there is no authentication so **don't use "as is" for sensitive data**.
+By default, the server listens on localhost. Pass `0.0.0.0` to allow external connections on any interface.
+
+See `example.lua` or `example.py` for sample usage.
+
+    disp = require 'display'
+    disp.image(image.lena())
+    disp.plot(torch.cat(torch.linspace(0, 10, 10), torch.randn(10), 2))
+
+![](https://raw.github.com/szym/display/master/example.png)
 
 ### Supported commands
 
@@ -42,27 +56,17 @@ Common parameters:
   - `file`: see [Dygraph data formats](http://dygraphs.com/data.html) for supported formats
   - `labels`: list of strings, first element is the X label
 
-## Installation and usage
+`text` sends raw HTML
 
-Install for Torch via:
+## Technical overview
 
-    luarocks install https://raw.githubusercontent.com/szym/display/master/display-scm-0.rockspec
+The server is a trivial message forwarder:
 
-Install for Python (`numpy` required) via:
+    POST /events -> EventSource('/events')
 
-    python setup.py install [--user]
+The Lua client sends JSON commands directly to the server. The browser script
+interprets these commands, e.g.
 
-Launch the server:
+    { command: 'image', src: 'data:image/png;base64,....', title: 'lena' }
 
-    th -ldisplay.start [port [address]]
 
-Note, there is no authentication and by default the server listens on external IP (port 8000),
-so **don't use "as is" for sensitive data**.
-
-See `example.lua` or `example.py` for sample usage.
-
-    disp = require 'display'
-    disp.image(image.lena())
-    disp.plot(torch.cat(torch.linspace(0, 10, 10), torch.randn(10), 2))
-
-![](https://raw.github.com/szym/display/master/example.png)
