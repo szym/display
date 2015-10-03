@@ -64,10 +64,10 @@ async.http.listen('http://' .. hostname .. ':' .. port .. '/',
 	   if served ~= nil then
 	      resp = served:read("*all")
 	      served:close()
+	      res(resp, {['Content-Type']=mime})
 	   else
-	      resp("Not found!")
+	      res('Not found!', {}, 404)
 	   end
-	   res(resp, {['Content-Type']=mime})
 	end
 end)
 
