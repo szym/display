@@ -4,61 +4,73 @@
 -- Forwards any data POSTed to /events to an event-stream at /events.
 -- Serves files from /static otherwise.
 
-local turbo = require('turbo')
+local port = tonumber(arg[1]) or 8000
+local hostname = arg[2] or '127.0.0.1'
+
+local async = require('async')
+
+local function getMime(ext)
+   if ext == '.css' then
+      return 'text/css'
+   elseif ext == '.js' then
+      return 'text/javascript'
+   else
+      return 'text/html' -- TODO: other mime types
+   end
+end
 
 local subscribers = {}
 
-function postEvent(data)
-  for k, v in pairs(subscribers) do
-    k:sendEvent(data)
-  end
-end
+async.http.listen('http://' .. hostname .. ':' .. port .. '/',
+     function(req, res, client)
+	print(req.method, req.url.path)
 
-local EventHandler = class('EventHandler', turbo.web.RequestHandler)
+	local resp
+	if req.url.path == '/events' then
+	   local header = {
+	      ['Content-Type']  = 'text/event-stream',
+	      ['Cache-Control'] = 'no-cache',
+	      ['Connection']    = 'keep-alive',
+	      ['Transfer-Encoding'] = 'chunked'
+	   }
+	   if req.method == 'GET' then
+	      res('', header, 200)
+	      table.insert(subscribers, client)
+	   elseif req.method == 'POST' then
+	      local body = req.body
+	      for i=1,#subscribers do
+		 local client = subscribers[i]
+		 assert(type(body) == 'string')
+		 local headlen = 8
+		 client.write(string.format('%x\r\n', #body + headlen))
+		 client.write('data: ') -- 6
+		 client.write(body)
+		 client.write('\n\n') -- 2
+		 client.write('\r\n')
+	      end
+	      res('', {})
+	   else
+	      res('Invalid!', {['Content-Type']='text/html'})
+	   end
+	else -- serve files from static
+	   local file = req.url.path
+	   if file == '/' or file == '' then
+	      file = '/index.html'
+	   end
+	   local ext = string.match(file, "%.%l%l%l?")
+	   local mime = getMime(ext)
 
-function EventHandler:sendEvent(data)
-  self:write('data: ')
-  self:write(data)
-  self:write('\n\n')
-  coroutine.yield(self:flush())
-end
+	   local served = io.open("static/" .. file, 'r')
+	   if served ~= nil then
+	      resp = served:read("*all")
+	      served:close()
+	   else
+	      resp("Not found!")
+	   end
+	   res(resp, {['Content-Type']=mime})
+	end
+end)
 
-function EventHandler:get()
-  self:set_async(true)
-  self:set_chunked_write()
-  self:set_header('Content-Type', 'text/event-stream')
-  self:set_header('Cache-Control', 'no-cache')
-  self:set_header('Connection', 'keep-alive')
-  self:set_status(200)
-  self:flush()
+print('server listening on http://' .. hostname .. ':' ..  port)
 
-  subscribers[self] = self
-end
-
-function EventHandler:on_finish()
-  subscribers[self] = nil
-end
-
-function EventHandler:post()
-  self:set_async(true)
-  postEvent(self.request.body)
-  self:set_status(200)
-  self:finish()
-end
-
-
-local scriptname = debug.getinfo(1, 'S').source:sub(2)
-local staticdir = scriptname:gsub('server.lua$', 'static/')
-
-app = turbo.web.Application:new({
-  {'/events', EventHandler},
-  {'/$', turbo.web.StaticFileHandler, staticdir .. 'index.html'},
-  {'/(.*)$', turbo.web.StaticFileHandler, staticdir}
-})
-
-local port = tonumber(arg[1]) or 8000
-local hostname = arg[2] or '127.0.0.1'
-app:listen(port, hostname, { max_body_size=(20 * 1024 * 1024) })
-print('Listening on http://' .. hostname .. ':' .. port)
-turbo.ioloop.instance():start()
-
+async.go()
