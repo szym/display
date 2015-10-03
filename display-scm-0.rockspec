@@ -28,6 +28,7 @@ build = {
       lua = {
         ["display.init"] = "init.lua",
         ["display.server"] = "server.lua",
+        ["display.start"] = "start.lua",
         ["display.config"] = "config.lua"
       }
    },

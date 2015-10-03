@@ -54,7 +54,7 @@ Install for Python (`numpy` required) via:
 
 Launch the server:
 
-    th -ldisplay.server [port [address]]
+    th -ldisplay.start [port [address]]
 
 Note, there is no authentication and by default the server listens on external IP (port 8000),
 so **don't use "as is" for sensitive data**.
