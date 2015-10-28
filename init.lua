@@ -28,7 +28,7 @@ local function send(command)
   http.request({
     url = M.url,
     method = 'POST',
-    headers = { ['content-length'] = #command, ['content-type'] = 'application/json' },
+    headers = { ['content-length'] = #command, ['content-type'] = 'application/text' },
     source = ltn12.source.string(command),
   })
 end
