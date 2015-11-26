@@ -43,7 +43,7 @@ See `example.lua` or `example.py` for sample usage.
 ### Supported commands
 
 Common parameters:
-  - `id`: identifier of the window to be reused (pick a random one if you want a new window)
+  - `win`: identifier of the window to be reused (pick a random one if you want a new window)
   - `title`: title for the window title bar
 
 `image` creates a zoomable `<img>` element
