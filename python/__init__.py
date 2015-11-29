@@ -19,7 +19,7 @@ def uid():
 def send(**command):
   command = json.dumps(command)
   req = urllib.request.Request(URL, method='POST')
-  req.add_header('Content-Type', 'application/json')
+  req.add_header('Content-Type', 'application/text')
   req.data = command.encode('ascii')
   try:
     resp = urllib.request.urlopen(req)
