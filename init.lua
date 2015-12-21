@@ -7,6 +7,7 @@ local mime = require 'mime'
 local http = require 'socket.http'
 local ltn12 = require 'ltn12'
 local json = require 'cjson'
+local ffi = require 'ffi'
 
 require 'image'  -- image module is broken for now
 local torch = require 'torch'
@@ -65,13 +66,10 @@ function M.image(img, opts)
 
   img = normalize(img, opts)
 
-  -- I wish we could write to memory instead of on-disk file.
-  local filename = os.tmpname() .. '.png'
-  image.save(filename, img)
+  -- write to in-memory compressed JPG
+  local inmem_img = image.compressJPG(img)
+  local imgdata = 'data:image/jpg;base64,' .. mime.b64(ffi.string(inmem_img:data(), inmem_img:nElement()))
 
-  local file = io.open(filename, 'rb')
-  local imgdata = 'data:image/png;base64,' .. mime.b64(file:read('*all'))
-  file:close()
 
   send({ command='image', id=win, src=imgdata, labels=opts._labels, width=opts.width, title=opts.title })
   return win
