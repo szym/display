@@ -166,5 +166,60 @@ function M.text(txt, opts)
   return win
 end
 
+function M.audio(data, opts)
+  opts = opts or {}
+  local win = opts.win or uid()
+
+  if not pcall(require, 'audio') then
+      print("Warning: audio package could not be loaded. Skipping audio.")
+      return
+  end
+
+  local fname
+  local delete = false
+  if torch.isTensor(data) then -- audio as tensor
+      if data:dim() ~= 2 then
+          print('Warning: audio tensor has to be 2D Tensor of NSamples x NChannels. Other tensor shapes are not supported')
+          return
+      end
+      local sampleRate = opts.rate or 44100 -- default sample rate
+      -- use temporary file
+      fname = os.tmpname() .. '.ogg'
+      audio.save(fname, data, sampleRate)
+      delete = true
+  elseif torch.type(data) == 'string' then -- audio file
+      fname = data
+      -- get prefix
+      local pos = fname:reverse():find('%.')
+      local ext = fname:sub(#fname-pos + 2)
+      if not (ext == 'mp3' or ext == 'wav' or ext == 'ogg' or ext == 'aac') then
+          print('Warning: mp3, wav, ogg, aac files supported. But found extension: ' .. ext)
+          return
+      end
+  else
+      print("Warning: unknown input type. Need a Tensor, or a filename")
+      return
+  end
+
+  -- load the audio as binary blob
+  local f = assert(torch.DiskFile(fname, 'r', true),
+               'File could not be opened: ' .. fname):binary();
+  f:seekEnd();
+  local size = f:position()-1
+  f:seek(1)
+  local buf = torch.CharStorage(size);
+  assert(f:readChar(buf) == size, 'wrong number of bytes read')
+  f:close()
+  local pos = fname:reverse():find('%.')
+  local ext = fname:sub(#fname-pos + 2)
+  local audiodata = 'data:audio/' .. ext .. ';base64,' .. mime.b64(ffi.string(torch.data(buf), size))
+  if delete then
+      os.execute('rm -f ' .. fname)
+  end
+
+  send({ command='audio', id=win, title=opts.title, data=audiodata })
+  return win
+end
+
 
 return M
