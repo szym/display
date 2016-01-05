@@ -551,7 +551,7 @@ PlotPane.prototype = extend(Object.create(Pane.prototype), {
 
 function TextPane(id) {
   Pane.call(this, id);
-    
+
   var self = this;
   var content = this.content;
   var txt = document.createElement('p');
@@ -563,6 +563,25 @@ function TextPane(id) {
 TextPane.prototype = extend(Object.create(Pane.prototype), {
   setContent: function(txt) {
     this.content.innerHTML = txt;
+  },
+});
+
+function AudioPane(id) {
+  Pane.call(this, id);
+
+  var self = this;
+  var content = this.content;
+  var audio = document.createElement('audio');
+  audio.className = 'content-audio';
+  audio.controls = true;
+  audio.autoplay = true;
+  content.appendChild(audio);
+  this.content = audio;
+}
+
+AudioPane.prototype = extend(Object.create(Pane.prototype), {
+  setContent: function(audio_data) {
+    this.content.src = audio_data;
   },
 });
 
@@ -585,6 +604,11 @@ var Commands = {
     var pane = getPane(cmd.id, TextPane);
     if (cmd.title) pane.setTitle(cmd.title);
     pane.setContent(cmd.text);
+  },
+  audio: function(cmd) {
+    var pane = getPane(cmd.id, AudioPane);
+    if (cmd.title) pane.setTitle(cmd.title);
+    pane.setContent(cmd.data);
   },
 };
 
