@@ -45,6 +45,12 @@ local function normalize(img, opts)
   return img
 end
 
+-- Set the URL of the listening server
+function M.server(config)
+  local port = config.port or 8000
+  local hostname = config.hostname or '127.0.0.1'
+  M.url = 'http://' .. hostname .. ':' .. port ..'/events'
+end
 
 function M.image(img, opts)
   -- options:
