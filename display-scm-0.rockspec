@@ -3,8 +3,7 @@ version = "scm-0"
 
 source = {
    url = "git://github.com/szym/display",
-   dir = "display",
-   branch = "development",
+   dir = "display"
 }
 
 description = {
@@ -17,7 +16,6 @@ description = {
 dependencies = {
    "torch >= 7.0",
    "image >= 1.0",
-   "sys >= 1.0",
    "luasocket >= 2.0",
    "lua-cjson >= 2.1.0",
    "async >= 1.0"
@@ -25,13 +23,14 @@ dependencies = {
 
 build = {
    type = "command",
+   build_command = "echo 'return { static = \"$(PREFIX)/static/\" }' > config.lua",
    install = {
-     lua = {
-       ["display.init"] = "init.lua",
-       ["display.server"] = "server.lua",
-       ["display.start"] = "start.lua",
-     },
+      lua = {
+        ["display.init"] = "init.lua",
+        ["display.server"] = "server.lua",
+        ["display.start"] = "start.lua",
+        ["display.config"] = "config.lua"
+      }
    },
-   install_command = "mkdir $(LUADIR)/display && cp -a static plugins $(LUADIR)/display",
-   copy_directories = { }
+   copy_directories = { "static" }
 }

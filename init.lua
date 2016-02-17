@@ -9,9 +9,8 @@ local ltn12 = require 'ltn12'
 local json = require 'cjson'
 local ffi = require 'ffi'
 
-local image = require 'image'
+require 'image'  -- image module is broken for now
 local torch = require 'torch'
-local sys = require 'sys'
 
 
 M = {
@@ -36,22 +35,6 @@ local function send(command)
 end
 
 
-local function plugin(type, filename)
-  -- Install plugin for new Pane type using Javascript from file.
-  local f = io.open(filename, 'r')
-  local script = f:read('*all')
-  f:close()
-  send({ command='plugin', type=type, script=script })
-end
-
-
-local function pane(type, win, title, content)
-  win = win or uid()
-  send({ command='pane', type=type, id=win, title=title, content=content })
-  return win
-end
-
-
 local function normalize(img, opts)
   -- rescale image to 0 .. 1
   local min = opts.min or img:min()
@@ -63,12 +46,10 @@ local function normalize(img, opts)
 end
 
 
-M.plugin = plugin
-M.pane = pane
-
-
 function M.image(img, opts)
+  -- options:
   opts = opts or {}
+  local win = opts.win or uid()      -- id of the window to be reused
 
   if type(img) == 'table' then
     return M.images(img, opts)
@@ -90,7 +71,8 @@ function M.image(img, opts)
   local imgdata = 'data:image/jpg;base64,' .. mime.b64(ffi.string(inmem_img:data(), inmem_img:nElement()))
 
 
-  return pane('image', opts.win, opts.title, { src=imgdata, labels=opts._labels, width=opts.width })
+  send({ command='image', id=win, src=imgdata, labels=opts._labels, width=opts.width, title=opts.title })
+  return win
 end
 
 
@@ -142,8 +124,8 @@ end
 -- first series is always the X-axis
 -- See http://dygraphs.com/options.html for supported options
 function M.plot(data, opts)
-  plugin('dygraph', sys.fpath() .. '/plugins/dygraph.js')
   opts = opts or {}
+  local win = opts.win or uid()
 
   local dataset = {}
   if torch.typename(data) then
@@ -172,19 +154,21 @@ function M.plot(data, opts)
   -- Don't pass our options to dygraphs. 'title' is ok
   options.win = nil
 
-  return pane('dygraph', opts.win, opts.title, options)
+  send({ command='plot', id=win, title=opts.title, options=options })
+  return win
 end
 
-
-function M.text(text, opts)
+function M.text(txt, opts)
   opts = opts or {}
+  local win = opts.win or uid()
 
-  return pane('text', opts.win, opts.title, text)
+  send({ command='text', id=win, title=opts.title, text=txt })
+  return win
 end
-
 
 function M.audio(data, opts)
   opts = opts or {}
+  local win = opts.win or uid()
 
   if not pcall(require, 'audio') then
       print("Warning: audio package could not be loaded. Skipping audio.")
@@ -248,7 +232,8 @@ function M.audio(data, opts)
 
   local audio_data = 'data:audio/' .. ext .. ';base64,'
      .. mime.b64(ffi.string(torch.data(buf), size))
-  return pane('audio', opts.win, opts.title, audio_data)
+  send({ command='audio', id=win, title=opts.title, data=audio_data })
+  return win
 end
 
 

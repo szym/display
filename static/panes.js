@@ -625,7 +625,7 @@ function connect() {
   });
 
   on(eventSource, 'error', function(event) {
-    if (eventSource.readyState == eventSource.CLOSED) {
+    if (eventSource.readyState != eventSource.OPEN) {
       status.className = 'offline';
       status.innerHTML = 'error';
     }
