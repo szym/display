@@ -1,7 +1,7 @@
 'use strict';
 
 // https://github.com/szym/display
-// Copyright (c) 2014, Szymon Jakubczak (MIT License)
+// Copyright (c) 2016, Szymon Jakubczak (MIT License)
 // Based on https://github.com/chjj/tty.js by Christopher Jeffrey
 
 (function() {
@@ -325,6 +325,8 @@ Pane.prototype = {
   },
 };
 
+//////////////////////
+// Built-in Pane types
 
 function ImagePane(id) {
   Pane.call(this, id);
@@ -385,14 +387,15 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
   },
 
   reset: function() {
-    var c = this.content;
+    var el = this.element
+      , c = this.content;
 
     c.style.left = '';
     c.style.top = '';
     c.style.width ='';
     c.style.height = '';
     this.resizeLabels();
-    this.scale = 1;
+    this.scale = Math.min(el.offsetWidth / c.naturalWidth, el.offsetHeight / c.naturalHeight);
   },
 
   fullzoom: function() {
@@ -474,24 +477,24 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
     on(document, 'mouseup', up);
   },
 
-  setContent: function(src, width, labels) {
+  setContent: function(content) {
     // Hack around unexpected behavior. Setting .src resets .style (except 'position: absolute').
     var oldCss = this.content.style.cssText;
-    this.content.src = src;
+    this.content.src = content.src;
     this.content.style.cssText = oldCss;
     if (this.content.style.cssText != oldCss) {
-      console.log('WHAT THE FLYIN FUCK', this.content.style, oldCss);
       this.content.style.cssText = oldCss;
     }
-    if (width) {
-      if (this.content.width != width)
+    if (content.width) {
+      if (this.content.width != content.width) {
+        this.content.width = content.width;
         this.reset();
-      this.content.width = width;
+      }
     } else {
       this.content.removeAttribute('width');
     }
     this.labels.innerHTML = '';
-    labels = labels || [];
+    var labels = content.labels || [];
     for (var i = 0; i < labels.length; ++i) {
       var a = labels[i];  // [x, y, text]
       var ae = document.createElement('div');
@@ -504,50 +507,6 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
   },
 });
 
-
-function getTickResolution(graph) {
-  var range = graph.yAxisRange(0);
-  var area = graph.getArea();
-  var maxTicks = area.h / graph.getOptionForAxis('pixelsPerLabel', 'y');
-  var tickSize = (range[1] - range[0]) / maxTicks;
-  return Math.floor(Math.log10(tickSize));
-}
-
-
-function PlotPane(id) {
-  Pane.call(this, id);
-
-  this.element.className += ' window-plot';
-  if (!this.element.style.height)
-     this.element.style.height = '200px';
-  this.content.className += ' content-plot';
-
-  // Use undefined initial data to avoid anything being drawn until setContent.
-  var graph = this.graph = new Dygraph(this.content, undefined, {
-    axes: {
-      y: {
-        valueFormatter: function(y) {
-          var resolution = getTickResolution(graph);
-          return y.toFixed(Math.max(0, -resolution + 1));
-        },
-        axisLabelFormatter: function(y) {
-          var resolution = getTickResolution(graph);
-          return y.toFixed(Math.max(0, -resolution));
-        },
-      },
-    },
-  });
-}
-
-PlotPane.prototype = extend(Object.create(Pane.prototype), {
-  onresize: function() {
-    this.graph.resize();
-  },
-
-  setContent: function(opts) {
-    this.graph.updateOptions(opts);
-  },
-});
 
 function TextPane(id) {
   Pane.call(this, id);
@@ -565,6 +524,7 @@ TextPane.prototype = extend(Object.create(Pane.prototype), {
     this.content.innerHTML = txt;
   },
 });
+
 
 function AudioPane(id) {
   Pane.call(this, id);
@@ -585,30 +545,50 @@ AudioPane.prototype = extend(Object.create(Pane.prototype), {
   },
 });
 
+
+/////////////////
+// Plugin support
+
+function loadScript(url) {
+  var el = document.createElement('script');
+  el.src = url;
+  document.body.appendChild(el);
+}
+
+function addCSS(css) {
+  var el = document.createElement('style');
+  el.type = 'text/css';
+  el.innerHTML = css;
+  document.head.appendChild(el);
+}
+
 ///////////////////
 // Display "server"
 
+
+// built-ins
+var PaneTypes = {
+  image: ImagePane,
+  text: TextPane,
+  audio: AudioPane,
+}
+
 var Commands = {
-  image: function(cmd) {
-    var pane = getPane(cmd.id, ImagePane);
-    if (cmd.title) pane.setTitle(cmd.title);
-    pane.setContent(cmd.src, cmd.width, cmd.labels);
+  plugin: function(msg) {
+    if (PaneTypes[msg.type]) {
+      console.log('Ignoring request for already installed Pane type: ' + msg.type);
+      return;
+    }
+    console.log('Installing new Pane type: ' + msg.type);
+    PaneTypes[msg.type] = (new Function(
+          'loadScript', 'addCSS', 'Pane', 'on', 'off', 'cancel', 'extend', msg.script))(
+          loadScript, addCSS, Pane, on, off, cancel, extend);
   },
 
-  plot: function(cmd) {
-    var pane = getPane(cmd.id, PlotPane);
-    if (cmd.title) pane.setTitle(cmd.title);
-    pane.setContent(cmd.options);
-  },
-  text: function(cmd) {
-    var pane = getPane(cmd.id, TextPane);
-    if (cmd.title) pane.setTitle(cmd.title);
-    pane.setContent(cmd.text);
-  },
-  audio: function(cmd) {
-    var pane = getPane(cmd.id, AudioPane);
-    if (cmd.title) pane.setTitle(cmd.title);
-    pane.setContent(cmd.data);
+  pane: function(msg) {
+    var pane = getPane(msg.id, PaneTypes[msg.type]);
+    if (msg.title) pane.setTitle(msg.title);
+    pane.setContent(msg.content);
   },
 };
 
@@ -622,16 +602,16 @@ function connect() {
   });
 
   on(eventSource, 'error', function(event) {
-    if (eventSource.readyState == eventSource.CLOSED) {
+    if (eventSource.readyState != eventSource.OPEN) {
       status.className = 'offline';
       status.innerHTML = 'error';
     }
   });
 
   on(eventSource, 'message', function(event) {
-    var cmd = JSON.parse(event.data);
-    var command = Commands[cmd.command];
-    if (command) command(cmd);
+    var msg = JSON.parse(event.data);
+    var command = Commands[msg.command];
+    if (command) command(msg);
   });
 
   return eventSource;

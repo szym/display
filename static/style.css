@@ -126,19 +126,4 @@ button:hover {
   image-rendering: pixelated;
 }
 
-.window-plot {
-  min-width: 300px;
-  min-height: 200px;
-}
 
-.content-plot {
-  background: white;
-}
-
-.dygraph-label {
-  font-size: 90%;
-}
-
-.dygraph-axis-label {
-  font-size: 90%;
-}
