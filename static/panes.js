@@ -1,7 +1,7 @@
 'use strict';
 
 // https://github.com/szym/display
-// Copyright (c) 2014, Szymon Jakubczak (MIT License)
+// Copyright (c) 2016, Szymon Jakubczak (MIT License)
 // Based on https://github.com/chjj/tty.js by Christopher Jeffrey
 
 (function() {
@@ -325,6 +325,8 @@ Pane.prototype = {
   },
 };
 
+//////////////////////
+// Built-in Pane types
 
 function ImagePane(id) {
   Pane.call(this, id);
@@ -385,14 +387,15 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
   },
 
   reset: function() {
-    var c = this.content;
+    var el = this.element
+      , c = this.content;
 
     c.style.left = '';
     c.style.top = '';
     c.style.width ='';
     c.style.height = '';
     this.resizeLabels();
-    this.scale = 1;
+    this.scale = Math.min(el.offsetWidth / c.naturalWidth, el.offsetHeight / c.naturalHeight);
   },
 
   fullzoom: function() {
@@ -474,24 +477,24 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
     on(document, 'mouseup', up);
   },
 
-  setContent: function(src, width, labels) {
+  setContent: function(content) {
     // Hack around unexpected behavior. Setting .src resets .style (except 'position: absolute').
     var oldCss = this.content.style.cssText;
-    this.content.src = src;
+    this.content.src = content.src;
     this.content.style.cssText = oldCss;
     if (this.content.style.cssText != oldCss) {
-      console.log('WHAT THE FLYIN FUCK', this.content.style, oldCss);
       this.content.style.cssText = oldCss;
     }
-    if (width) {
-      if (this.content.width != width)
+    if (content.width) {
+      if (this.content.width != content.width) {
+        this.content.width = content.width;
         this.reset();
-      this.content.width = width;
+      }
     } else {
       this.content.removeAttribute('width');
     }
     this.labels.innerHTML = '';
-    labels = labels || [];
+    var labels = content.labels || [];
     for (var i = 0; i < labels.length; ++i) {
       var a = labels[i];  // [x, y, text]
       var ae = document.createElement('div');
@@ -588,27 +591,20 @@ AudioPane.prototype = extend(Object.create(Pane.prototype), {
 ///////////////////
 // Display "server"
 
-var Commands = {
-  image: function(cmd) {
-    var pane = getPane(cmd.id, ImagePane);
-    if (cmd.title) pane.setTitle(cmd.title);
-    pane.setContent(cmd.src, cmd.width, cmd.labels);
-  },
+var PaneTypes = {
+  image: ImagePane,
+  plot: PlotPane,
+  text: TextPane,
+  audio: AudioPane,
+}
 
-  plot: function(cmd) {
-    var pane = getPane(cmd.id, PlotPane);
+var Commands = {
+  pane: function(cmd) {
+    var panetype = PaneTypes[cmd.type];
+    if (!panetype) return
+    var pane = getPane(cmd.id, panetype);
     if (cmd.title) pane.setTitle(cmd.title);
-    pane.setContent(cmd.options);
-  },
-  text: function(cmd) {
-    var pane = getPane(cmd.id, TextPane);
-    if (cmd.title) pane.setTitle(cmd.title);
-    pane.setContent(cmd.text);
-  },
-  audio: function(cmd) {
-    var pane = getPane(cmd.id, AudioPane);
-    if (cmd.title) pane.setTitle(cmd.title);
-    pane.setContent(cmd.data);
+    pane.setContent(cmd.content);
   },
 };
 
@@ -622,7 +618,7 @@ function connect() {
   });
 
   on(eventSource, 'error', function(event) {
-    if (eventSource.readyState == eventSource.CLOSED) {
+    if (eventSource.readyState != eventSource.OPEN) {
       status.className = 'offline';
       status.innerHTML = 'error';
     }
