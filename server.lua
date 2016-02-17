@@ -5,7 +5,7 @@
 -- Serves files from /static otherwise.
 
 local async = require('async')
-local config = require('display.config')
+local sys = require('sys')
 
 local function getMime(ext)
    if ext == '.css' then
@@ -57,7 +57,7 @@ local function handler(req, res, client)
     local ext = string.match(path, "%.%l%l%l?")
     local mime = getMime(ext)
 
-    local file = io.open(config.static .. path, 'r')
+    local file = io.open(sys.fpath() .. '/static' .. path, 'r')
     if file ~= nil then
       local content = file:read("*all")
       file:close()
