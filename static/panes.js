@@ -387,7 +387,7 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
   },
 
   reset: function() {
-    var el = this element
+    var el = this.element
       , c = this.content;
 
     c.style.left = '';
@@ -477,24 +477,24 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
     on(document, 'mouseup', up);
   },
 
-  setContent: function(src, width, labels) {
+  setContent: function(content) {
     // Hack around unexpected behavior. Setting .src resets .style (except 'position: absolute').
     var oldCss = this.content.style.cssText;
-    this.content.src = src;
+    this.content.src = content.src;
     this.content.style.cssText = oldCss;
     if (this.content.style.cssText != oldCss) {
       this.content.style.cssText = oldCss;
     }
-    if (width) {
-      if (this.content.width != width) {
-        this.content.width = width;
+    if (content.width) {
+      if (this.content.width != content.width) {
+        this.content.width = content.width;
         this.reset();
       }
     } else {
       this.content.removeAttribute('width');
     }
     this.labels.innerHTML = '';
-    labels = labels || [];
+    var labels = content.labels || [];
     for (var i = 0; i < labels.length; ++i) {
       var a = labels[i];  // [x, y, text]
       var ae = document.createElement('div');
@@ -591,27 +591,20 @@ AudioPane.prototype = extend(Object.create(Pane.prototype), {
 ///////////////////
 // Display "server"
 
-var Commands = {
-  image: function(cmd) {
-    var pane = getPane(cmd.id, ImagePane);
-    if (cmd.title) pane.setTitle(cmd.title);
-    pane.setContent(cmd.src, cmd.width, cmd.labels);
-  },
+var PaneTypes = {
+  image: ImagePane,
+  plot: PlotPane,
+  text: TextPane,
+  audio: AudioPane,
+}
 
-  plot: function(cmd) {
-    var pane = getPane(cmd.id, PlotPane);
+var Commands = {
+  pane: function(cmd) {
+    var panetype = PaneTypes[cmd.type];
+    if (!panetype) return
+    var pane = getPane(cmd.id, panetype);
     if (cmd.title) pane.setTitle(cmd.title);
-    pane.setContent(cmd.options);
-  },
-  text: function(cmd) {
-    var pane = getPane(cmd.id, TextPane);
-    if (cmd.title) pane.setTitle(cmd.title);
-    pane.setContent(cmd.text);
-  },
-  audio: function(cmd) {
-    var pane = getPane(cmd.id, AudioPane);
-    if (cmd.title) pane.setTitle(cmd.title);
-    pane.setContent(cmd.data);
+    pane.setContent(cmd.content);
   },
 };
 
