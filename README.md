@@ -1,5 +1,9 @@
 # display: a browser-based graphics server
 
+A very lightweight display server for Torch. Best used as a remote desktop paired with a SSH session (in regular terminal).
+
+Use a Torch REPL (e.g., [trepl](https://github.com/torch/trepl)) via SSH to control Torch and tell it to display stuff (images, plots, audio) to the server. The server then forwards the display data to (one or more) web clients.
+
 ## Installation
 
 Install for Torch via:
@@ -21,15 +25,28 @@ By default, the server listens on localhost. Pass `0.0.0.0` to allow external co
 
     th -ldisplay.start 8000 0.0.0.0
 
-See `example.lua` or `example.py` for sample usage.
+Then open `http://(hostname):(port)/` in your browser to load the remote desktop.
 
+To actually display stuff on the server, use the `display` package in a Torch REPL:
+
+    torch = require 'torch'
+    image = require 'image'
+    -- Load the display package
     disp = require 'display'
+    -- If you used a custom port or want to talk to a remote server (default is 127.0.0.1)...
+    -- disp.url = 'http://myremoteserver.com:1234/
+
+    -- Display a torch tensor as an image. The image is automatically normalized to be renderable.
     disp.image(image.lena())
+    -- Display a torch tensor as a graph. The first column is always the X dimension.
+    -- The other columns can be multiple series.
     disp.plot(torch.cat(torch.linspace(0, 10, 10), torch.randn(10), 2))
 
-![](https://raw.github.com/szym/display/master/example.png)
+Each command creates a new window on the desktop that can be independently positioned, resized, maximized.
+If you want to reuse a window, pass the window id returned by each `image` or `plot` command as the `win` option.
+See `example.lua` or `example.py` for a bigger example.
 
-> TODO: fill me in
+![](https://raw.github.com/szym/display/master/example.png)
 
 ## Development
 
