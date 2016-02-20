@@ -1,6 +1,6 @@
 # display: a browser-based graphics server
 
-A very lightweight display server for Torch. Best used as a remote desktop paired with a SSH session (in regular terminal).
+A very lightweight display server for [Torch](http://torch.ch). Best used as a remote desktop paired with a terminal of your choice.
 
 Use a Torch REPL (e.g., [trepl](https://github.com/torch/trepl)) via SSH to control Torch and tell it to display stuff (images, plots, audio) to the server. The server then forwards the display data to (one or more) web clients.
 
@@ -27,17 +27,22 @@ By default, the server listens on localhost. Pass `0.0.0.0` to allow external co
 
 Then open `http://(hostname):(port)/` in your browser to load the remote desktop.
 
-To actually display stuff on the server, use the `display` package in a Torch REPL:
+To actually display stuff on the server, use the `display` package in a Torch script or REPL:
 
+    -- Generic stuff you'll need to make images anyway.
     torch = require 'torch'
     image = require 'image'
+    
     -- Load the display package
     disp = require 'display'
+    
     -- If you used a custom port or want to talk to a remote server (default is 127.0.0.1)...
-    -- disp.url = 'http://myremoteserver.com:1234/
+    -- disp.url = 'http://myremoteserver.com:1234/events
 
     -- Display a torch tensor as an image. The image is automatically normalized to be renderable.
-    disp.image(image.lena())
+    lena = image.lena()
+    disp.image(lena)
+    
     -- Display a torch tensor as a graph. The first column is always the X dimension.
     -- The other columns can be multiple series.
     disp.plot(torch.cat(torch.linspace(0, 10, 10), torch.randn(10), 2))
@@ -73,7 +78,6 @@ See `example.lua` or `example.py` for a bigger example.
 `text` places raw text in `<p>` element
 
 `audio` places raw audio content in an `<audio>` element
-
 
 ## Technical overview
 
