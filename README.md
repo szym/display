@@ -34,18 +34,18 @@ To actually display stuff on the server, use the `display` package in a Torch sc
     image = require 'image'
     
     -- Load the display package
-    disp = require 'display'
+    display = require 'display'
     
-    -- If you used a custom port or want to talk to a remote server (default is 127.0.0.1)...
-    -- disp.url = 'http://myremoteserver.com:1234/events
+    -- Tell the library, if you used a custom port or a remote server (default is 127.0.0.1).
+    display.configure({hostname='myremoteserver.com', port=1234})
 
     -- Display a torch tensor as an image. The image is automatically normalized to be renderable.
     lena = image.lena()
-    disp.image(lena)
+    display.image(lena)
     
     -- Display a torch tensor as a graph. The first column is always the X dimension.
     -- The other columns can be multiple series.
-    disp.plot(torch.cat(torch.linspace(0, 10, 10), torch.randn(10), 2))
+    display.plot(torch.cat(torch.linspace(0, 10, 10), torch.randn(10), 2))
 
 Each command creates a new window on the desktop that can be independently positioned, resized, maximized.
 If you want to reuse a window, pass the window id returned by each `image` or `plot` command as the `win` option.
