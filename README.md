@@ -1,10 +1,15 @@
 # display: a browser-based graphics server
 
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+- [Development](#development)
+
 A very lightweight display server for [Torch](http://torch.ch). Best used as a remote desktop paired with a terminal of your choice.
 
 Use a Torch REPL (e.g., [trepl](https://github.com/torch/trepl)) via SSH to control Torch and tell it to display stuff (images, plots, audio) to the server. The server then forwards the display data to (one or more) web clients.
 
-## Installation
+## <a name='installation'></a> Installation
 
 Install for Torch via:
 
@@ -13,8 +18,10 @@ Install for Torch via:
 Install for Python (`numpy` required) via:
 
     python setup.py install [--user]
+    
+> NOTE: The Python client is not yet fully developed.
 
-## Quick Start
+## <a name='quick-start'></a> Quick Start
 
 Launch the server:
 
@@ -29,48 +36,54 @@ Then open `http://(hostname):(port)/` in your browser to load the remote desktop
 
 To actually display stuff on the server, use the `display` package in a Torch script or REPL:
 
-    -- Generic stuff you'll need to make images anyway.
-    torch = require 'torch'
-    image = require 'image'
-    
-    -- Load the display package
-    display = require 'display'
-    
-    -- Tell the library, if you used a custom port or a remote server (default is 127.0.0.1).
-    display.configure({hostname='myremoteserver.com', port=1234})
+```lua
+-- Generic stuff you'll need to make images anyway.
+torch = require 'torch'
+image = require 'image'
 
-    -- Display a torch tensor as an image. The image is automatically normalized to be renderable.
-    local lena = image.lena()
-    display.image(lena)
-    
-    -- Plot some random data.
-    display.plot(torch.cat(torch.linspace(0, 10, 10), torch.randn(10), 2))
+-- Load the display package
+display = require 'display'
+
+-- Tell the library, if you used a custom port or a remote server (default is 127.0.0.1).
+display.configure({hostname='myremoteserver.com', port=1234})
+
+-- Display a torch tensor as an image. The image is automatically normalized to be renderable.
+local lena = image.lena()
+display.image(lena)
+
+-- Plot some random data.
+display.plot(torch.cat(torch.linspace(0, 10, 10), torch.randn(10), 2))
+```
 
 See `example.lua` or `example.py` for a bigger example.
 
 ![](https://raw.github.com/szym/display/master/example.png)
 
-## Usage
+## <a name='usage'></a> Usage
 
 Each command creates a new window (pane) on the desktop that can be independently positioned, resized, maximized.
 It also returns the id of the window which can be passed as the `win` option to reuse the window
 for a subsequent command. This can be used to show current progress of your script:
 
-    for i = 1, num_iterations do
-       -- do some work
-       ...
-       -- update results
-       local state_win = display.image(current_state, {win=state_win, title='state at iteration ' .. i})
-    end
+```lua
+for i = 1, num_iterations do
+   -- do some work
+   ...
+   -- update results
+   local state_win = display.image(current_state, {win=state_win, title='state at iteration ' .. i})
+end
+```
 
 Another common option is `title`. The title bar can be double-clicked to maximize the window.
 The `x` button closes the window. The `o` button "disconnects" the window so that it will not be
 overwritten when the script reuses the window id. This is useful if you want to make a quick "copy" of the window
 to compare progress between iterations.
 
-###  Images
+### Images
 
-`display.image(tensor, options)`
+```lua
+display.image(tensor, options)
+```
 
 Displays the tensor as an image. The tensor is normalized (by a scalar offset and scaling factor) to be displayable.
 The image can be panned around and zoomed (with the scroll wheel or equivalent).
@@ -82,7 +95,9 @@ the RGB channels). This is equivalent to passing a list (Lua table) of tensors o
 This is convenient when visualizing the trained filters of convolutional layer. Each image is normalized independently.
 When displaying a list of images, the option `labels` can be used to put a small label on each sub-image:
 
-      display.images({a, b, c, d}, {labels={'a', 'b', 'c', 'd'}})
+```lua
+display.images({a, b, c, d}, {labels={'a', 'b', 'c', 'd'}})
+```
 
 Finally, the option `width` can be used to specify the initial size of the window in pixels.
 
@@ -99,28 +114,28 @@ The command supports all the [Dygraph options](http://dygraphs.com/options.html)
 Most importantly `labels` is taken as a list (Lua table) of series labels. Again the first label is for the X axis.
 You can name the Y axis with `ylabel`.
 
-      local config = {
-        title = "Global accuracy/recall over time",
-        labels = {"epoch", "accuracy", "recall"},
-        ylabel = "ratio",
-      }
+```lua
+local config = {
+  title = "Global accuracy/recall over time",
+  labels = {"epoch", "accuracy", "recall"},
+  ylabel = "ratio",
+}
 
-      for t = 1, noEpoch do
-        -- update model, compute data
-        local accuracy, recall = train()
-
-        -- update plot data
-        table.insert(data, {t, accuracy, recall})
-
-        -- display
-        config.win = display.plot(data, config)
-      end
+for t = 1, noEpoch do
+  -- update model, compute data
+  local accuracy, recall = train()
+  -- update plot data
+  table.insert(data, {t, accuracy, recall})
+  -- display
+  config.win = display.plot(data, config)
+end
+```
 
 ### Other
 
 `display.audio(tensor_with_audio, options)`
 
-## Development
+## <a name='development'></a> Development
 
 ### Supported commands
 
@@ -146,7 +161,7 @@ You can name the Y axis with `ylabel`.
 
 `audio` places raw audio content in an `<audio>` element
 
-## Technical overview
+### Technical overview
 
 The server is a trivial message forwarder:
 
@@ -155,9 +170,9 @@ The server is a trivial message forwarder:
 The Lua client sends JSON commands directly to the server. The browser script
 interprets these commands, e.g.
 
-    { command: 'image', src: 'data:image/png;base64,....', title: 'lena' }
+    { command: 'pane', type: 'image', content: { src: 'data:image/png;base64,....' }, title: 'lena' }
 
-## History
+### History
 
 Originally forked from [gfx.js](https://github.com/clementfarabet/gfx.js/).
 
