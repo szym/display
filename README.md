@@ -68,7 +68,9 @@ The `x` button closes the window. The `o` button "disconnects" the window so tha
 overwritten when the script reuses the window id. This is useful if you want to make a quick "copy" of the window
 to compare progress between iterations.
 
-- `image(tensor, options)`
+###  Images
+
+`display.image(tensor, options)`
 
 Displays the tensor as an image. The tensor is normalized (by a scalar offset and scaling factor) to be displayable.
 The image can be panned around and zoomed (with the scroll wheel or equivalent).
@@ -84,7 +86,9 @@ When displaying a list of images, the option `labels` can be used to put a small
 
 Finally, the option `width` can be used to specify the initial size of the window in pixels.
 
-`plot(data, options)`
+### Plotting
+
+`display.plot(data, options)`
 
 Creates a [Dygraph plot](http://dygraphs.com) which is most useful for visualizing time series.
 The graph can be zoomed in by selecting a range of X values or zoomed-out by double-clicking it.
@@ -111,6 +115,10 @@ You can name the Y axis with `ylabel`.
         -- display
         config.win = display.plot(data, config)
       end
+
+### Other
+
+`display.audio(tensor_with_audio, options)`
 
 ## Development
 
