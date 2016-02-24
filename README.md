@@ -14,7 +14,7 @@ Install for Python (`numpy` required) via:
 
     python setup.py install [--user]
 
-## Usage
+## Quick Start
 
 Launch the server:
 
@@ -40,18 +40,77 @@ To actually display stuff on the server, use the `display` package in a Torch sc
     display.configure({hostname='myremoteserver.com', port=1234})
 
     -- Display a torch tensor as an image. The image is automatically normalized to be renderable.
-    lena = image.lena()
+    local lena = image.lena()
     display.image(lena)
     
-    -- Display a torch tensor as a graph. The first column is always the X dimension.
-    -- The other columns can be multiple series.
+    -- Plot some random data.
     display.plot(torch.cat(torch.linspace(0, 10, 10), torch.randn(10), 2))
 
-Each command creates a new window on the desktop that can be independently positioned, resized, maximized.
-If you want to reuse a window, pass the window id returned by each `image` or `plot` command as the `win` option.
 See `example.lua` or `example.py` for a bigger example.
 
 ![](https://raw.github.com/szym/display/master/example.png)
+
+## Usage
+
+Each command creates a new window (pane) on the desktop that can be independently positioned, resized, maximized.
+It also returns the id of the window which can be passed as the `win` option to reuse the window
+for a subsequent command. This can be used to show current progress of your script:
+
+    for i = 1, num_iterations do
+       -- do some work
+       ...
+       -- update results
+       local state_win = display.image(current_state, {win=state_win, title='state at iteration ' .. i})
+    end
+
+Another common option is `title`. The title bar can be double-clicked to maximize the window.
+The `x` button closes the window. The `o` button "disconnects" the window so that it will not be
+overwritten when the script reuses the window id. This is useful if you want to make a quick "copy" of the window
+to compare progress between iterations.
+
+- `image(tensor, options)`
+
+Displays the tensor as an image. The tensor is normalized (by a scalar offset and scaling factor) to be displayable.
+The image can be panned around and zoomed (with the scroll wheel or equivalent).
+Double-click the image to restore original size or fill the window.
+
+If the tensor has 4 dimensions, it is considered to be a list of images -- sliced by first dimension.
+Same thing if it has 3 dimensions but the first dimension has size more than 3 (so they cannot be considered
+the RGB channels). This is equivalent to passing a list (Lua table) of tensors or the explicit `images` command.
+This is convenient when visualizing the trained filters of convolutional layer. Each image is normalized independently.
+When displaying a list of images, the option `labels` can be used to put a small label on each sub-image:
+
+      display.images({a, b, c, d}, {labels={'a', 'b', 'c', 'd'}})
+
+Finally, the option `width` can be used to specify the initial size of the window in pixels.
+
+`plot(data, options)`
+
+Creates a [Dygraph plot](http://dygraphs.com) which is most useful for visualizing time series.
+The graph can be zoomed in by selecting a range of X values or zoomed-out by double-clicking it.
+
+The data should either be a 2-dimensional tensor where the each row is a data point and each column is a series,
+or a Lua table of tables. The first column is always taken as the X dimension. 
+The command supports all the [Dygraph options](http://dygraphs.com/options.html).
+Most importantly `labels` is taken as a list (Lua table) of series labels. Again the first label is for the X axis.
+You can name the Y axis with `ylabel`.
+
+      local config = {
+        title = "Global accuracy/recall over time",
+        labels = {"epoch", "accuracy", "recall"},
+        ylabel = "ratio",
+      }
+
+      for t = 1, noEpoch do
+        -- update model, compute data
+        local accuracy, recall = train()
+
+        -- update plot data
+        table.insert(data, {t, accuracy, recall})
+
+        -- display
+        config.win = display.plot(data, config)
+      end
 
 ## Development
 
@@ -106,5 +165,3 @@ Compared to `gfx.js`:
   - image lists are rendered as one image to speed up loading
   - windows remember their positions
   - implementation not relying on the filesystem, supports remote clients (sources)
-
-
