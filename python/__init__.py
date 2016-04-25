@@ -71,7 +71,6 @@ def image(img, **opts):
       'labels': opts.get('labels'),
       'width': opts.get('width'),
   })
-  return win
 
 
 def images(images, **opts):
