@@ -60,6 +60,12 @@ function M.configure(config)
 end
 
 function M.image(img, opts)
+
+  local defaultType = torch.getdefaulttensortype()
+  -- the image package expects this to be DoubleTensor 
+  -- if CudaTensor then clampImage from package image will attempt to index field 'image' (a nil value) of the CudaTensor
+  torch.setdefaulttensortype('torch.DoubleTensor') 
+
   -- options:
   opts = opts or {}
 
@@ -82,6 +88,7 @@ function M.image(img, opts)
   local inmem_img = image.compressJPG(img)
   local imgdata = 'data:image/jpg;base64,' .. mime.b64(ffi.string(inmem_img:data(), inmem_img:nElement()))
 
+  torch.setdefaulttensortype(defaultType)
 
   return pane('image', opts.win, opts.title, { src=imgdata, labels=opts._labels, width=opts.width })
 end
