@@ -117,6 +117,12 @@ function Pane(id) {
   cloneButton.innerHTML = 'o';
   cloneButton.title = 'disconnect';
 
+  var saveButton = document.createElement('a');
+  saveButton.innerHTML = '&#10515;';
+  saveButton.title = 'save';
+  saveButton.download = 'untitled_image.jpg';
+  saveButton.href = '';
+
   var title = document.createElement('div');
   title.className = 'title';
 
@@ -129,12 +135,14 @@ function Pane(id) {
   this.grip = grip;
   this.title = title;
   this.content = content;
+  this.saveButton = saveButton;
 
   el.appendChild(grip);
   el.appendChild(bar);
   el.appendChild(content);
   bar.appendChild(closeButton);
   bar.appendChild(cloneButton);
+  bar.appendChild(saveButton);
   bar.appendChild(title);
   body.appendChild(el);
 
@@ -188,6 +196,7 @@ function Pane(id) {
 Pane.prototype = {
   setTitle: function(title) {
     this.title.innerHTML = title;
+    this.saveButton.download = title.replace(/\s+/g, '_') + '.jpg';
   },
 
   focus: function() {
@@ -481,6 +490,7 @@ ImagePane.prototype = extend(Object.create(Pane.prototype), {
     // Hack around unexpected behavior. Setting .src resets .style (except 'position: absolute').
     var oldCss = this.content.style.cssText;
     this.content.src = content.src;
+    this.saveButton.href = content.src;
     this.content.style.cssText = oldCss;
     if (this.content.style.cssText != oldCss) {
       this.content.style.cssText = oldCss;
